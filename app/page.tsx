@@ -69,7 +69,8 @@ export default function Home() {
             {settimane.map((settimana) => (
               <div
                 key={settimana.id}
-                className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border-l-4 border-orange-500"
+                onClick={() => window.location.href = `/settimana/${settimana.id}`}
+                className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-all cursor-pointer border-l-4 border-orange-500 transform hover:scale-102"
               >
                 <div className="flex items-start justify-between mb-3">
                   <span className="text-sm font-semibold text-orange-600 bg-orange-100 px-3 py-1 rounded-full">
