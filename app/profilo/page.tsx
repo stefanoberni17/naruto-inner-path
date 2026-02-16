@@ -32,7 +32,6 @@ export default function ProfiloPage() {
       setUserId(session.user.id);
       setEmail(session.user.email || '');
 
-      // Carica profilo
       const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
@@ -96,30 +95,22 @@ export default function ProfiloPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 py-12 px-4">
-      <div className="max-w-3xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="text-4xl">👤</div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-800">
-                  Il tuo Profilo
-                </h1>
-                <p className="text-sm text-gray-600">{email}</p>
-              </div>
-            </div>
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="text-gray-600 hover:text-gray-800"
-            >
-              ← Dashboard
-            </button>
+    <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 py-8 px-4 pb-24">
+      {/* Header */}
+      <div className="max-w-3xl mx-auto mb-6">
+        <div className="flex items-center gap-3">
+          <div className="text-4xl">👤</div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">
+              Il tuo Profilo
+            </h1>
+            <p className="text-sm text-gray-600">{email}</p>
           </div>
         </div>
+      </div>
 
-        {/* Form */}
+      {/* Form */}
+      <div className="max-w-3xl mx-auto">
         <form onSubmit={handleSave} className="bg-white rounded-lg shadow-lg p-8">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
@@ -224,21 +215,14 @@ export default function ProfiloPage() {
             </div>
           </div>
 
-          {/* Bottoni */}
-          <div className="flex gap-4 mt-8">
+          {/* Bottone */}
+          <div className="mt-8">
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? 'Salvataggio...' : '💾 Salva Modifiche'}
-            </button>
-            <button
-              type="button"
-              onClick={() => router.push('/dashboard')}
-              className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg transition-all"
-            >
-              Annulla
             </button>
           </div>
         </form>

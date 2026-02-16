@@ -58,16 +58,10 @@ export default function SettimanaPage() {
   const episodi = properties.Episodi?.rich_text?.[0]?.plain_text || '';
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 py-12 px-4">
+    <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 py-8 px-4 pb-24">
       {/* Header */}
-      <div className="max-w-4xl mx-auto mb-8">
-        <button 
-          onClick={() => router.push('/')}
-          className="text-orange-600 hover:text-orange-700 mb-4 flex items-center gap-2"
-        >
-          ← Torna alle settimane
-        </button>
-
+      {/* Header */}
+      <div className="max-w-4xl mx-auto mb-8">  
         <div className="bg-white rounded-lg shadow-lg p-8 border-l-4 border-orange-500">
           <span className="text-sm font-semibold text-orange-600 bg-orange-100 px-3 py-1 rounded-full">
             {settimana}

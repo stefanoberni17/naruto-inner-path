@@ -21,18 +21,15 @@ export default function Home() {
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [profile, setProfile] = useState<any>(null);
 
-  // Verifica autenticazione
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        // Non loggato → redirect a login
         router.push('/login');
         return;
       }
 
-      // Carica profilo
       const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
@@ -61,11 +58,6 @@ export default function Home() {
       });
   }, [checkingAuth]);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push('/login');
-  };
-
   if (checkingAuth) {
     return (
       <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 flex items-center justify-center">
@@ -89,46 +81,14 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 py-8 px-4">
-      {/* Header con nome utente e logout */}
-      <div className="max-w-7xl mx-auto mb-8">
-        <div className="flex items-center justify-between bg-white rounded-lg shadow-lg p-4">
-          <div className="flex items-center gap-3">
-            <div className="text-3xl">🍥</div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-800">
-                Naruto Inner Path
-              </h1>
-              <p className="text-sm text-gray-600">
-                Benvenuto, {profile?.name || 'Guerriero'}!
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex gap-3">
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg transition-all"
-            >
-              Dashboard
-            </button>
-            <button
-              onClick={handleLogout}
-              className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg transition-all"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Titolo sezione */}
-      <div className="max-w-7xl mx-auto mb-8 text-center">
-        <h2 className="text-4xl font-bold text-gray-800 mb-2">
-          📅 Le Settimane del Percorso
-        </h2>
+    <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 py-8 px-4 pb-24">
+      {/* Titolo */}
+      <div className="max-w-7xl mx-auto mb-6">
+        <h1 className="text-3xl font-bold text-gray-800 mb-1">
+          Ciao, {profile?.name || 'Guerriero'}! 👋
+        </h1>
         <p className="text-gray-600">
-          Scegli una settimana per iniziare il tuo viaggio
+          Scegli una settimana per continuare il tuo viaggio
         </p>
       </div>
 
@@ -137,7 +97,7 @@ export default function Home() {
         {settimane.map((settimana) => (
           <div
             key={settimana.id}
-            onClick={() => window.location.href = `/settimana/${settimana.id}`}
+            onClick={() => router.push(`/settimana/${settimana.id}`)}
             className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-all cursor-pointer border-l-4 border-orange-500 transform hover:scale-102"
           >
             <div className="flex items-start justify-between mb-3">
