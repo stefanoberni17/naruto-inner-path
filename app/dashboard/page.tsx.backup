@@ -4,21 +4,11 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
-const WEEK_NAMES: Record<number, string> = {
-  1: 'Week 1 - La ferita del rifiuto',
-  2: 'Week 2 - La ferita del rifiuto',
-  3: 'Week 3 - Presenza e ascolto',
-  4: 'Week 4 - Presenza e ascolto',
-  5: 'Week 5 - Valore e appartenenza',
-  6: 'Week 6 - Valore e appartenenza',
-};
-
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [completedEpisodes, setCompletedEpisodes] = useState(0);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -39,15 +29,6 @@ export default function DashboardPage() {
         .single();
 
       setProfile(profileData);
-
-      // Conta episodi completati
-      const { count } = await supabase
-        .from('user_episode_progress')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', session.user.id)
-        .eq('completed', true);
-
-      setCompletedEpisodes(count || 0);
       setLoading(false);
     };
 
@@ -65,9 +46,6 @@ export default function DashboardPage() {
     );
   }
 
-  const currentWeek = profile?.current_week || 1;
-  const progressPercentage = Math.round((completedEpisodes / 19) * 100);
-
   return (
     <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 py-8 px-4 pb-24">
       {/* Saluto */}
@@ -82,58 +60,29 @@ export default function DashboardPage() {
 
       {/* Dashboard content */}
       <div className="max-w-6xl mx-auto">
-        {/* Current Week Card */}
-        <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg shadow-lg p-6 mb-6 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-orange-100 text-sm mb-1">📍 Sei qui</p>
-              <h2 className="text-2xl font-bold">
-                {WEEK_NAMES[currentWeek] || `Week ${currentWeek}`}
-              </h2>
-            </div>
-            <div className="text-5xl">
-              🍥
-            </div>
-          </div>
-        </div>
-
         <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">
             🎯 Il Tuo Percorso
           </h2>
           <p className="text-gray-600 mb-6">
-            Traccia i tuoi progressi attraverso il percorso MVP (19 episodi)
+            Traccia i tuoi progressi attraverso le 24 settimane
           </p>
 
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded">
-              <div className="text-3xl font-bold text-orange-600">{completedEpisodes}</div>
-              <div className="text-sm text-gray-600">Episodi completati</div>
+              <div className="text-3xl font-bold text-orange-600">0</div>
+              <div className="text-sm text-gray-600">Settimane completate</div>
             </div>
             
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-              <div className="text-3xl font-bold text-blue-600">19</div>
-              <div className="text-sm text-gray-600">Episodi totali MVP</div>
+              <div className="text-3xl font-bold text-blue-600">24</div>
+              <div className="text-sm text-gray-600">Settimane totali</div>
             </div>
             
             <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded">
-              <div className="text-3xl font-bold text-green-600">{progressPercentage}%</div>
+              <div className="text-3xl font-bold text-green-600">0%</div>
               <div className="text-sm text-gray-600">Progressione</div>
-            </div>
-          </div>
-
-          {/* Progress Bar */}
-          <div className="mb-6">
-            <div className="flex justify-between text-sm text-gray-600 mb-2">
-              <span>Progresso MVP</span>
-              <span>{completedEpisodes}/19 episodi</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-3">
-              <div 
-                className="bg-gradient-to-r from-orange-500 to-orange-600 h-3 rounded-full transition-all duration-500"
-                style={{ width: `${progressPercentage}%` }}
-              />
             </div>
           </div>
 
