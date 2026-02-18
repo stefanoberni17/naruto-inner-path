@@ -19,6 +19,7 @@ export default function LoginPage() {
     setError('');
 
     try {
+      // 1. Login con Supabase Auth
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -27,7 +28,38 @@ export default function LoginPage() {
       if (error) throw error;
 
       console.log('✅ Login riuscito!', data);
+
+      // 2. ✅ Controlla se esiste il profilo
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', data.user.id)
+        .single();
+
+      if (profileError || !profile) {
+        console.error('❌ Profilo non trovato:', profileError);
+        
+        // Logout e redirect a registrazione
+        await supabase.auth.signOut();
+        setError('Account non trovato. Devi prima registrarti.');
+        setLoading(false);
+        
+        // Redirect automatico dopo 2 secondi
+        setTimeout(() => {
+          router.push('/register');
+        }, 2000);
+        return;
+      }
+
+      // 3. ✅ Controlla onboarding
+      if (!profile.onboarding_completed) {
+        router.push('/onboarding');
+        return;
+      }
+
+      // 4. ✅ Tutto ok, vai alla dashboard
       router.push('/dashboard');
+
     } catch (error: any) {
       setError(error.message);
       console.error('❌ Errore login:', error);
