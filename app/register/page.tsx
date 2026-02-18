@@ -69,23 +69,24 @@ export default function RegisterPage() {
           passions: passioni.trim() || null,
           dream: sogno.trim() || null,
           current_situation: situazioneAttuale.trim() || null,
+          onboarding_completed: false, // ✅ AGGIUNTO
         });
 
       if (profileError) {
-            console.error('❌ Errore profilo COMPLETO:', profileError);
-            console.error('Message:', profileError.message);
-            console.error('Details:', profileError.details);
-            console.error('Hint:', profileError.hint);
-            console.error('Code:', profileError.code);
-            throw new Error(profileError.message || 'Errore nella creazione del profilo');
-            }
+        console.error('❌ Errore profilo COMPLETO:', profileError);
+        console.error('Message:', profileError.message);
+        console.error('Details:', profileError.details);
+        console.error('Hint:', profileError.hint);
+        console.error('Code:', profileError.code);
+        throw new Error(profileError.message || 'Errore nella creazione del profilo');
+      }
 
       console.log('✅ Profilo creato!');
       setSuccess(true);
 
       // Redirect dopo 2 secondi
       setTimeout(() => {
-        router.push('/dashboard');
+        router.push('/onboarding'); // ✅ CAMBIATO da '/dashboard' a '/onboarding'
       }, 2000);
 
     } catch (error: any) {

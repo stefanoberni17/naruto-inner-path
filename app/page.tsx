@@ -35,11 +35,18 @@ export default function Home() {
 
       setUserId(session.user.id);
 
+      // ✅ Check onboarding PRIMA di caricare il resto
       const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', session.user.id)
         .single();
+
+      // ✅ Se non ha completato onboarding, redirect
+      if (!profileData?.onboarding_completed) {
+        router.push('/onboarding');
+        return;
+      }
 
       setProfile(profileData);
 
@@ -122,7 +129,7 @@ export default function Home() {
           return (
             <div
               key={settimana.id}
-              onClick={() => isUnlocked && router.push(`/settimana/${settimana.id}`)}
+              onClick={() => isUnlocked && router.push(`/settimana/${settimana.id}?userId=${userId}`)}
               className={`bg-white rounded-lg shadow-lg p-6 transition-all border-l-4 ${
                 isUnlocked 
                   ? 'cursor-pointer hover:shadow-xl transform hover:scale-102' 
