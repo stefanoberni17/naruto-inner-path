@@ -13,16 +13,33 @@ export default function OnboardingPage() {
     setCompleting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        await supabase
-          .from('profiles')
-          .update({ onboarding_completed: true })
-          .eq('user_id', session.user.id);
-        
-        router.push('/');
+      
+      if (!session) {
+        router.push('/login');
+        return;
       }
+
+      // ✅ Aspetta che l'update finisca E controlla errori
+      const { error } = await supabase
+        .from('profiles')
+        .update({ onboarding_completed: true })
+        .eq('user_id', session.user.id);
+
+      if (error) {
+        console.error('❌ Errore update onboarding:', error);
+        alert('Errore nel salvataggio. Riprova.');
+        setCompleting(false);
+        return;
+      }
+
+      console.log('✅ Onboarding completato!');
+      
+      // ✅ Redirect solo dopo salvataggio riuscito
+      router.push('/');
+      
     } catch (error) {
-      console.error('Error:', error);
+      console.error('❌ Errore imprevisto:', error);
+      alert('Errore imprevisto. Riprova.');
       setCompleting(false);
     }
   };
