@@ -6,7 +6,7 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-type DayKey = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
+type DayKey = 'day1' | 'day2' | 'day3' | 'day4' | 'day5' | 'day6' | 'day7' | 'day8' | 'day9' | 'day10' | 'day11' | 'day12' | 'day13' | 'day14';
 
 // GET - Carica pratiche della settimana
 export async function GET(request: NextRequest) {
@@ -78,13 +78,8 @@ export async function POST(request: NextRequest) {
       .single();
 
     const currentDays = existing?.completed_days || {
-      mon: false,
-      tue: false,
-      wed: false,
-      thu: false,
-      fri: false,
-      sat: false,
-      sun: false,
+      day1: false, day2: false, day3: false, day4: false, day5: false, day6: false, day7: false,
+      day8: false, day9: false, day10: false, day11: false, day12: false, day13: false, day14: false,
     };
 
     // Aggiorna il giorno specifico

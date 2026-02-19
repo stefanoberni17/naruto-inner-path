@@ -23,16 +23,11 @@ const WEEK_IDS: Record<number, string> = {
 };
 
 const DAY_LABELS: Record<string, string> = {
-  mon: 'Lun',
-  tue: 'Mar',
-  wed: 'Mer',
-  thu: 'Gio',
-  fri: 'Ven',
-  sat: 'Sab',
-  sun: 'Dom',
+  day1: '1', day2: '2', day3: '3', day4: '4', day5: '5', day6: '6', day7: '7',
+  day8: '8', day9: '9', day10: '10', day11: '11', day12: '12', day13: '13', day14: '14',
 };
 
-const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
+const DAY_KEYS = ['day1', 'day2', 'day3', 'day4', 'day5', 'day6', 'day7', 'day8', 'day9', 'day10', 'day11', 'day12', 'day13', 'day14'] as const;
 type DayKey = typeof DAY_KEYS[number];
 
 export default function DashboardPage() {
@@ -270,7 +265,7 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* ✅ 2. PRATICHE (SOPRA - 2° POSTO) */}
+          {/* ✅ 2. PRATICHE (SOPRA - 2° POSTO) - 14 GIORNI */}
           {practicheArray.length > 0 && (
             <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
               <h2 className="text-2xl font-bold text-gray-800 mb-2 flex items-center gap-2">
@@ -278,7 +273,7 @@ export default function DashboardPage() {
                 <span>Pratiche della Settimana</span>
               </h2>
               <p className="text-sm text-gray-500 mb-6">
-                Opzionale - per aiutarti a ricordare le pratiche giornaliere
+                Opzionale - per aiutarti a ricordare le pratiche nei 14 giorni (2 settimane)
               </p>
 
               <div className="space-y-4">
@@ -295,27 +290,47 @@ export default function DashboardPage() {
                             {index + 1}. {praticaText}
                           </h3>
                           <p className="text-xs text-green-600">
-                            {completedCount}/7 giorni completati
+                            {completedCount}/14 giorni completati
                           </p>
                         </div>
                       </div>
 
-                      {/* Tracker 7 giorni */}
-                      <div className="flex gap-2 mt-3">
-                        {DAY_KEYS.map(day => (
-                          <button
-                            key={day}
-                            onClick={() => togglePracticeDay(index + 1, day)}
-                            disabled={loadingPractices}
-                            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
-                              completedDays[day]
-                                ? 'bg-green-500 text-white'
-                                : 'bg-white text-gray-600 border border-gray-200 hover:border-green-300'
-                            } disabled:opacity-50`}
-                          >
-                            {DAY_LABELS[day]}
-                          </button>
-                        ))}
+                      {/* Tracker 14 giorni - 2 righe da 7 */}
+                      <div className="space-y-2 mt-3">
+                        {/* Prima settimana (1-7) */}
+                        <div className="flex gap-2">
+                          {DAY_KEYS.slice(0, 7).map(day => (
+                            <button
+                              key={day}
+                              onClick={() => togglePracticeDay(index + 1, day)}
+                              disabled={loadingPractices}
+                              className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
+                                completedDays[day]
+                                  ? 'bg-green-500 text-white'
+                                  : 'bg-white text-gray-600 border border-gray-200 hover:border-green-300'
+                              } disabled:opacity-50`}
+                            >
+                              {DAY_LABELS[day]}
+                            </button>
+                          ))}
+                        </div>
+                        {/* Seconda settimana (8-14) */}
+                        <div className="flex gap-2">
+                          {DAY_KEYS.slice(7, 14).map(day => (
+                            <button
+                              key={day}
+                              onClick={() => togglePracticeDay(index + 1, day)}
+                              disabled={loadingPractices}
+                              className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
+                                completedDays[day]
+                                  ? 'bg-green-500 text-white'
+                                  : 'bg-white text-gray-600 border border-gray-200 hover:border-green-300'
+                              } disabled:opacity-50`}
+                            >
+                              {DAY_LABELS[day]}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   );
