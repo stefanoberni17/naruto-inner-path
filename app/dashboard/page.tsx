@@ -94,6 +94,7 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 py-8 px-4 pb-24">
+      {/* Header */}
       <div className="max-w-6xl mx-auto mb-6">
         <h1 className="text-3xl font-bold text-gray-800">
           Ciao, {profile?.name || 'Guerriero'}! 👋
@@ -104,6 +105,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="max-w-6xl mx-auto">
+        {/* Card Week corrente */}
         <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg shadow-lg p-6 mb-6 text-white">
           <div className="flex items-center justify-between">
             <div>
@@ -116,6 +118,40 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* ✅ 1. MANTRA E PRATICHE (PRIMA) */}
+        {(mantra || pratiche) && (
+          <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">
+              🧘 Questa Settimana
+            </h2>
+
+            {mantra && (
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-l-4 border-purple-500 p-6 rounded-lg mb-6">
+                <h3 className="text-lg font-bold text-purple-800 mb-2 flex items-center gap-2">
+                  <span>🔮</span>
+                  <span>Mantra della Settimana</span>
+                </h3>
+                <p className="text-purple-900 text-lg italic font-medium whitespace-pre-line">
+                  {mantra}
+                </p>
+              </div>
+            )}
+
+            {pratiche && (
+              <div className="bg-gradient-to-r from-green-50 to-teal-50 border-l-4 border-green-500 p-6 rounded-lg">
+                <h3 className="text-lg font-bold text-green-800 mb-3 flex items-center gap-2">
+                  <span>✨</span>
+                  <span>Pratiche Consigliate</span>
+                </h3>
+                <div className="text-green-900 whitespace-pre-line leading-relaxed">
+                  {pratiche}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ✅ 2. PROGRESSO (DOPO) */}
         <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">
             🎯 Il Tuo Percorso
@@ -161,38 +197,6 @@ export default function DashboardPage() {
             🚀 Esplora le Settimane
           </button>
         </div>
-
-        {(pratiche || mantra) && (
-          <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">
-              🧘 Questa Settimana
-            </h2>
-
-            {mantra && (
-              <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-l-4 border-purple-500 p-6 rounded-lg mb-6">
-                <h3 className="text-lg font-bold text-purple-800 mb-2 flex items-center gap-2">
-                  <span>🔮</span>
-                  <span>Mantra della Settimana</span>
-                </h3>
-                <p className="text-purple-900 text-lg italic font-medium whitespace-pre-line">
-                  {mantra}
-                </p>
-              </div>
-            )}
-
-            {pratiche && (
-              <div className="bg-gradient-to-r from-green-50 to-teal-50 border-l-4 border-green-500 p-6 rounded-lg">
-                <h3 className="text-lg font-bold text-green-800 mb-3 flex items-center gap-2">
-                  <span>✨</span>
-                  <span>Pratiche Consigliate</span>
-                </h3>
-                <div className="text-green-900 whitespace-pre-line leading-relaxed">
-                  {pratiche}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </main>
   );
