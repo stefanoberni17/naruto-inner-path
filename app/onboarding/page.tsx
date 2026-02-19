@@ -19,7 +19,6 @@ export default function OnboardingPage() {
         return;
       }
 
-      // ✅ Aspetta che l'update finisca E controlla errori
       const { error } = await supabase
         .from('profiles')
         .update({ onboarding_completed: true })
@@ -33,8 +32,6 @@ export default function OnboardingPage() {
       }
 
       console.log('✅ Onboarding completato!');
-      
-      // ✅ Redirect solo dopo salvataggio riuscito
       router.push('/');
       
     } catch (error) {
@@ -177,7 +174,51 @@ export default function OnboardingPage() {
       )
     },
 
-    // SLIDE 4
+    // SLIDE 4 - Telegram (facoltativo)
+    {
+      title: "Il Maestro AI anche su Telegram",
+      subtitle: "Facoltativo, ma comodo",
+      content: (
+        <div className="max-w-xl mx-auto text-center">
+          <div className="text-7xl mb-6">📱</div>
+          <p className="text-lg text-gray-700 mb-8 leading-relaxed">
+            Puoi parlare con il Maestro AI direttamente su Telegram, 
+            in qualsiasi momento della giornata — anche senza aprire l'app.
+          </p>
+
+          <div className="bg-blue-50 rounded-xl p-6 text-left mb-4">
+            <p className="font-semibold text-gray-800 mb-4">Come collegarlo in 4 passi:</p>
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5">1</span>
+                <p className="text-gray-700 text-sm">Apri Telegram e cerca <strong>@getidsbot</strong></p>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5">2</span>
+                <p className="text-gray-700 text-sm">Scrivili qualsiasi messaggio — ti risponde con il tuo ID numerico</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5">3</span>
+                <p className="text-gray-700 text-sm">Vai su <strong>Profilo</strong> nell'app e incolla il numero nel campo "Collega Telegram"</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5">4</span>
+                <p className="text-gray-700 text-sm">Cerca <strong>@Sensei_naruto_bot</strong> su Telegram e inizia a parlare</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
+            <p className="text-sm text-gray-500 italic">
+              Puoi farlo ora o in qualsiasi momento dal tuo profilo. 
+              Non è necessario per iniziare il percorso.
+            </p>
+          </div>
+        </div>
+      )
+    },
+
+    // SLIDE 5
     {
       title: "Sei pronto per iniziare?",
       subtitle: "",
