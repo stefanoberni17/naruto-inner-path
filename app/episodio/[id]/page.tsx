@@ -222,6 +222,7 @@ export default function EpisodioPage() {
             userId,
             episodeNumber,
             reflectionText: reflectionText.trim(),
+            reflectionQuestion: episodeData?.reflectionQuestion || '',
           }),
         });
         setReflectionSaved(true);
