@@ -67,3 +67,36 @@ export function getNextWeekToUnlock(completedEpisodes: EpisodeProgress[]): numbe
   const nextWeek = Math.max(...unlocked) + 1;
   return nextWeek <= 6 ? nextWeek : null;
 }
+// ========================================
+// BETA RESTRICTIONS
+// ========================================
+
+/**
+ * MVP Beta: solo Week 1-4 accessibili (episodi 1-12)
+ */
+export const BETA_MAX_WEEK = 4;
+export const BETA_MAX_EPISODE = 12;
+
+/**
+ * Controlla se una settimana è accessibile nella versione Beta
+ */
+export function isWeekUnlockedInBeta(weekNumber: number): boolean {
+  return weekNumber <= BETA_MAX_WEEK;
+}
+
+/**
+ * Restituisce messaggio di lock per settimane non disponibili in Beta
+ */
+export function getWeekLockMessage(weekNumber: number): string {
+  if (weekNumber > BETA_MAX_WEEK) {
+    return "Questa settimana sarà disponibile nella versione completa del percorso. Stay tuned! 🍥";
+  }
+  return "";
+}
+
+/**
+ * Controlla se un episodio è accessibile nella versione Beta
+ */
+export function isEpisodeUnlockedInBeta(episodeNumber: number): boolean {
+  return episodeNumber <= BETA_MAX_EPISODE;
+}
