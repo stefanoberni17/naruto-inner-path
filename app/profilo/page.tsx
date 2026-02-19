@@ -212,49 +212,35 @@ export default function ProfiloPage() {
           </div>
 
           {/* Collega Telegram */}
-          <div className="space-y-4 pb-6 border-b mb-6">
-            <h3 className="font-semibold text-gray-700 text-lg">🤖 Collega Telegram</h3>
-            
-            {telegramId ? (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">✅</span>
-                  <div>
-                    <p className="font-medium text-green-800">Telegram collegato!</p>
-                    <p className="text-xs text-green-600">ID: {telegramId}</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setTelegramId('')}
-                  className="text-xs text-red-500 hover:text-red-700 underline"
-                >
-                  Scollega
-                </button>
+            <div className="space-y-4 pb-6 border-b mb-6">
+              <h3 className="font-semibold text-gray-700 text-lg">🤖 Collega Telegram</h3>
+              
+              <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm text-blue-800">
+                <p className="font-medium mb-2">Come trovare il tuo ID Telegram:</p>
+                <ol className="list-decimal list-inside space-y-1 text-blue-700">
+                  <li>Apri Telegram e cerca <strong>@getidsbot</strong></li>
+                  <li>Scrivili qualsiasi messaggio</li>
+                  <li>Copia il numero che ti risponde e incollalo qui sotto</li>
+                </ol>
               </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm text-blue-800">
-                  <p className="font-medium mb-2">Come trovare il tuo ID Telegram:</p>
-                  <ol className="list-decimal list-inside space-y-1 text-blue-700">
-                    <li>Apri Telegram e cerca <strong>@getidsbot</strong></li>
-                    <li>Scrivili qualsiasi messaggio</li>
-                    <li>Copia il numero che ti risponde e incollalo qui sotto</li>
-                  </ol>
-                </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Il tuo ID Telegram
+                </label>
                 <input
                   type="text"
                   value={telegramId}
                   onChange={(e) => setTelegramId(e.target.value)}
+                  autoComplete="off"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   placeholder="Es. 766672351"
                 />
-                <p className="text-xs text-gray-500">
-                  Una volta collegato potrai parlare con il Maestro AI direttamente su Telegram cercando <strong>@Sensei_naruto_bot</strong>
+                <p className="text-xs text-gray-500 mt-1">
+                  Una volta salvato potrai parlare con il Maestro AI su <strong>@Sensei_naruto_bot</strong>
                 </p>
               </div>
-            )}
-          </div>
+            </div>
 
           {/* Il tuo percorso */}
           <div className="space-y-6">
