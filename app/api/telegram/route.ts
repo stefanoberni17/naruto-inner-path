@@ -8,7 +8,7 @@ const anthropic = new Anthropic({
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 const SYSTEM_PROMPT = `Sei un maestro spirituale che guida gli utenti attraverso "Naruto Inner Path", un percorso di crescita personale di 24 settimane ispirato agli insegnamenti di Naruto.
