@@ -94,13 +94,13 @@ export async function POST(request: NextRequest) {
       .select('episode_number, reflection_question, reflection_text, created_at')
       .eq('user_id', userId)
       .order('episode_number', { ascending: true });
-
+/* disabilita temporanea
     // ⚠️ Check safety nel messaggio utente
     const lastUserMessage = messages[messages.length - 1];
     if (lastUserMessage.role === 'user' && checkSafetyKeywords(lastUserMessage.content)) {
       await sendSafetyAlert(userId, profile?.name || 'Unknown', lastUserMessage.content);
     }
-
+*/
     // 📊 Costruisci context personalizzato
     const userContext = `
 # CONTESTO UTENTE
