@@ -81,7 +81,7 @@ export default function ChatBot() {
 
       const assistantMessage: Message = {
         role: 'assistant',
-        content: data.message,
+        content: data.response || data.message || 'Errore nella risposta',
         timestamp: new Date(),
       };
 
