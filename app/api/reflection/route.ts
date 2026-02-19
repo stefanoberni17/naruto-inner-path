@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
 // POST - Salva o aggiorna riflessione
 export async function POST(request: NextRequest) {
   try {
-    const { userId, episodeNumber, reflectionText } = await request.json();
+    const { userId, episodeNumber, reflectionText, reflectionQuestion } = await request.json();
 
     if (!userId || !episodeNumber || !reflectionText) {
       return NextResponse.json(
@@ -62,14 +62,15 @@ export async function POST(request: NextRequest) {
     }
 
     const { data, error } = await supabaseAdmin
-      .from('episode_reflections')
-      .upsert(
-        {
-          user_id: userId,
-          episode_number: episodeNumber,
-          reflection_text: reflectionText,
-          updated_at: new Date().toISOString(),
-        },
+  .from('episode_reflections')
+  .upsert(
+    {
+      user_id: userId,
+      episode_number: episodeNumber,
+      reflection_text: reflectionText,
+      reflection_question: reflectionQuestion || null,
+      updated_at: new Date().toISOString(),
+    },
         { onConflict: 'user_id,episode_number' }
       )
       .select()
