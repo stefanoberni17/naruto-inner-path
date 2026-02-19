@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import EpisodeCard from '@/components/EpisodeCard';
 
-// Mapping episodi per settimana
 const WEEK_EPISODES: Record<string, number[]> = {
   '1': [1, 2, 3, 4, 5],
   '2': [1, 2, 3, 4, 5],
@@ -15,7 +14,6 @@ const WEEK_EPISODES: Record<string, number[]> = {
   '6': [13, 14, 15, 16, 17, 18, 19],
 };
 
-// Titoli episodi
 const EPISODE_TITLES: Record<number, string> = {
   1: 'Enter: Naruto Uzumaki!',
   2: 'My Name is Konohamaru!',
@@ -41,6 +39,7 @@ const EPISODE_TITLES: Record<number, string> = {
 export default function SettimanaPage() {
   const params = useParams();
   const router = useRouter();
+  const episodesRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
   const [userId, setUserId] = useState<string>('');
@@ -53,7 +52,6 @@ export default function SettimanaPage() {
       .select('episode_number, completed')
       .eq('user_id', uid)
       .eq('completed', true);
-
     setCompletedEpisodes((progress || []).map(p => p.episode_number));
   };
 
@@ -82,6 +80,10 @@ export default function SettimanaPage() {
 
     init();
   }, [params.id, router]);
+
+  const scrollToEpisodes = () => {
+    episodesRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   if (loading) {
     return (
@@ -123,18 +125,48 @@ export default function SettimanaPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 py-8 px-4 pb-24">
+      
+      {/* Header settimana */}
       <div className="max-w-4xl mx-auto mb-8">
         <div className="bg-white rounded-lg shadow-lg p-8 border-l-4 border-orange-500">
-          <span className="text-sm font-semibold text-orange-600 bg-orange-100 px-3 py-1 rounded-full">
-            {settimana}
-          </span>
-          <h1 className="text-4xl font-bold text-gray-800 mt-4 mb-2">{titolo}</h1>
-          <p className="text-lg text-gray-600 mb-4">{tema}</p>
-          <div className="text-sm text-gray-500 border-t pt-4">📺 Episodi: {episodi}</div>
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex-1">
+              <span className="text-sm font-semibold text-orange-600 bg-orange-100 px-3 py-1 rounded-full">
+                {settimana}
+              </span>
+              <h1 className="text-4xl font-bold text-gray-800 mt-4 mb-2">{titolo}</h1>
+              <p className="text-lg text-gray-600 mb-4">{tema}</p>
+              <div className="text-sm text-gray-500 border-t pt-4">📺 Episodi: {episodi}</div>
+            </div>
+            {/* Pulsante scorri agli episodi */}
+            <button
+              onClick={scrollToEpisodes}
+              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded-full transition-all shadow-md hover:shadow-lg whitespace-nowrap self-start mt-1"
+            >
+              📺 Vai agli episodi ↓
+            </button>
+          </div>
         </div>
       </div>
 
+      {/* Contenuto della settimana */}
       <div className="max-w-4xl mx-auto mb-8">
+        <div className="bg-white rounded-lg shadow-lg p-8">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">📖 Contenuto della settimana</h2>
+          {data.blocks && data.blocks.length > 0 ? (
+            <div className="prose max-w-none">
+              {data.blocks.map((block: any, index: number) => (
+                <div key={block.id || index} className="mb-4">{renderBlock(block)}</div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-600">Contenuto completo disponibile su Notion.</p>
+          )}
+        </div>
+      </div>
+
+      {/* Episodi in fondo */}
+      <div className="max-w-4xl mx-auto mb-8" ref={episodesRef}>
         <div className="bg-white rounded-lg shadow-lg p-6">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">📺 Episodi della settimana</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -158,20 +190,6 @@ export default function SettimanaPage() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">📖 Contenuto della settimana</h2>
-          {data.blocks && data.blocks.length > 0 ? (
-            <div className="prose max-w-none">
-              {data.blocks.map((block: any, index: number) => (
-                <div key={block.id || index} className="mb-4">{renderBlock(block)}</div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-600">Contenuto completo disponibile su Notion.</p>
-          )}
-        </div>
-      </div>
     </main>
   );
 }
