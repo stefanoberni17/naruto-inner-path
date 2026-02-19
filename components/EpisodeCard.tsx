@@ -81,15 +81,6 @@ export default function EpisodeCard({
         </p>
       )}
 
-      {!isLocked && !isCompleted && (
-        <button
-          onClick={handleComplete}
-          className="w-full mt-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold py-2 px-3 rounded transition-all"
-        >
-          ✓ Segna come completato
-        </button>
-      )}
-
       {isCompleted && (
         <div className="mt-2 text-xs text-green-600 bg-green-50 p-2 rounded text-center">
           ✅ Completato
