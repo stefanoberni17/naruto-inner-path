@@ -19,7 +19,7 @@ const SAFETY_KEYWORDS = [
   'uccidere', 'ammazzare', 'fare del male a', 'voglio uccidere',
   'violenza', 'picchiare', 'aggredire'
 ];
-
+/* disabilitato per ora
 // ⚠️ Invia alert email
 async function sendSafetyAlert(userId: string, userName: string, messageContent: string) {
   try {
@@ -58,7 +58,7 @@ async function sendSafetyAlert(userId: string, userName: string, messageContent:
     console.error('Errore invio alert:', error);
   }
 }
-
+*/
 // Controlla se il messaggio contiene keywords a rischio
 function checkSafetyKeywords(text: string): boolean {
   const lowerText = text.toLowerCase();
