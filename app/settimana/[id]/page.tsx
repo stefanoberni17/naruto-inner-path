@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import EpisodeCard from '@/components/EpisodeCard';
 
-// Mapping episodi per settimana
 const WEEK_EPISODES: Record<string, number[]> = {
   '1': [1, 2, 3, 4, 5],
   '2': [1, 2, 3, 4, 5],
@@ -15,7 +14,6 @@ const WEEK_EPISODES: Record<string, number[]> = {
   '6': [13, 14, 15, 16, 17, 18, 19],
 };
 
-// Titoli episodi
 const EPISODE_TITLES: Record<number, string> = {
   1: 'Enter: Naruto Uzumaki!',
   2: 'My Name is Konohamaru!',
@@ -41,6 +39,7 @@ const EPISODE_TITLES: Record<number, string> = {
 export default function SettimanaPage() {
   const params = useParams();
   const router = useRouter();
+  const episodesRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
   const [userId, setUserId] = useState<string>('');
@@ -53,7 +52,6 @@ export default function SettimanaPage() {
       .select('episode_number, completed')
       .eq('user_id', uid)
       .eq('completed', true);
-
     setCompletedEpisodes((progress || []).map(p => p.episode_number));
   };
 
@@ -83,6 +81,10 @@ export default function SettimanaPage() {
     init();
   }, [params.id, router]);
 
+  const scrollToEpisodes = () => {
+    episodesRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   if (loading) {
     return (
       <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 flex items-center justify-center">
@@ -99,7 +101,7 @@ export default function SettimanaPage() {
       <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 flex items-center justify-center">
         <div className="text-center">
           <p className="text-xl text-red-600">Errore nel caricamento</p>
-          <button 
+          <button
             onClick={() => router.push('/')}
             className="mt-4 bg-orange-500 text-white px-6 py-2 rounded-full"
           >
@@ -123,18 +125,43 @@ export default function SettimanaPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 py-8 px-4 pb-24">
+
+      {/* Header settimana */}
       <div className="max-w-4xl mx-auto mb-8">
         <div className="bg-white rounded-lg shadow-lg p-8 border-l-4 border-orange-500">
           <span className="text-sm font-semibold text-orange-600 bg-orange-100 px-3 py-1 rounded-full">
             {settimana}
           </span>
           <h1 className="text-4xl font-bold text-gray-800 mt-4 mb-2">{titolo}</h1>
-          <p className="text-lg text-gray-600 mb-4">{tema}</p>
+          <p className="text-lg text-gray-600 mb-6">{tema}</p>
+          <button
+            onClick={scrollToEpisodes}
+            className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded-full transition-all shadow-md hover:shadow-lg mb-4"
+          >
+            📺 Vai agli episodi ↓
+          </button>
           <div className="text-sm text-gray-500 border-t pt-4">📺 Episodi: {episodi}</div>
         </div>
       </div>
 
+      {/* Contenuto della settimana */}
       <div className="max-w-4xl mx-auto mb-8">
+        <div className="bg-white rounded-lg shadow-lg p-8">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">📖 Contenuto della settimana</h2>
+          {data.blocks && data.blocks.length > 0 ? (
+            <div className="prose max-w-none">
+              {data.blocks.map((block: any, index: number) => (
+                <div key={block.id || index} className="mb-4">{renderBlock(block)}</div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-600">Contenuto completo disponibile su Notion.</p>
+          )}
+        </div>
+      </div>
+
+      {/* Episodi in fondo */}
+      <div className="max-w-4xl mx-auto mb-8" ref={episodesRef}>
         <div className="bg-white rounded-lg shadow-lg p-6">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">📺 Episodi della settimana</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -158,20 +185,6 @@ export default function SettimanaPage() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">📖 Contenuto della settimana</h2>
-          {data.blocks && data.blocks.length > 0 ? (
-            <div className="prose max-w-none">
-              {data.blocks.map((block: any, index: number) => (
-                <div key={block.id || index} className="mb-4">{renderBlock(block)}</div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-600">Contenuto completo disponibile su Notion.</p>
-          )}
-        </div>
-      </div>
     </main>
   );
 }
@@ -192,7 +205,7 @@ function renderBlock(block: any) {
           ))}
         </p>
       );
-    
+
     case 'heading_1':
       const h1Texts = block.heading_1?.rich_text || [];
       return (
@@ -200,7 +213,7 @@ function renderBlock(block: any) {
           {h1Texts.map((t: any) => t.plain_text).join('')}
         </h1>
       );
-    
+
     case 'heading_2':
       const h2Texts = block.heading_2?.rich_text || [];
       return (
@@ -208,7 +221,7 @@ function renderBlock(block: any) {
           {h2Texts.map((t: any) => t.plain_text).join('')}
         </h2>
       );
-    
+
     case 'heading_3':
       const h3Texts = block.heading_3?.rich_text || [];
       return (
@@ -216,7 +229,7 @@ function renderBlock(block: any) {
           {h3Texts.map((t: any) => t.plain_text).join('')}
         </h3>
       );
-    
+
     case 'bulleted_list_item':
       const liTexts = block.bulleted_list_item?.rich_text || [];
       return (
@@ -232,7 +245,7 @@ function renderBlock(block: any) {
           {numTexts.map((t: any) => t.plain_text).join('')}
         </li>
       );
-    
+
     case 'quote':
       const quoteTexts = block.quote?.rich_text || [];
       return (
@@ -240,10 +253,10 @@ function renderBlock(block: any) {
           {quoteTexts.map((t: any) => t.plain_text).join('')}
         </blockquote>
       );
-    
+
     case 'divider':
       return <hr className="my-8 border-gray-300" />;
-    
+
     case 'toggle':
       const toggleTexts = block.toggle?.rich_text || [];
       const toggleTitle = toggleTexts.map((t: any) => t.plain_text).join('');
