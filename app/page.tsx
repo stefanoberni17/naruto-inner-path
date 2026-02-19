@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { getUnlockedWeeks } from '@/lib/weekUnlockLogic';
+import { getUnlockedWeeks, isWeekUnlockedInBeta, getWeekLockMessage } from '@/lib/weekUnlockLogic';
 
 interface Settimana {
   id: string;
@@ -116,7 +116,7 @@ export default function Home() {
           Ciao, {profile?.name || 'Guerriero'}! 👋
         </h1>
         <p className="text-gray-600">
-          {unlockedWeeks.length} settimane sbloccate su 6
+          {unlockedWeeks.filter(w => w <= 4).length} settimane sbloccate su 4 (versione Beta)
         </p>
       </div>
 
@@ -125,7 +125,45 @@ export default function Home() {
         {settimane.map((settimana) => {
           const isUnlocked = unlockedWeeks.includes(settimana.numero);
           const isCurrentWeek = settimana.numero === currentWeek;
+          const isBetaLocked = !isWeekUnlockedInBeta(settimana.numero);
+          const lockMessage = getWeekLockMessage(settimana.numero);
           
+          // ✅ Week 5-6 bloccate in Beta
+          if (isBetaLocked) {
+            return (
+              <div
+                key={settimana.id}
+                className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-gray-300 opacity-60"
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <span className="text-xs font-semibold px-3 py-1 rounded-full text-gray-600 bg-gray-100">
+                    {settimana.settimana}
+                  </span>
+                  <span className="text-2xl">🔒</span>
+                </div>
+                
+                <h3 className="text-xl font-bold mb-2 text-gray-400">
+                  {settimana.titolo}
+                </h3>
+                
+                <p className="text-sm mb-3 text-gray-400">
+                  {settimana.tema}
+                </p>
+                
+                <div className="text-xs border-t pt-3 text-gray-400">
+                  📺 Episodi: {settimana.episodi}
+                </div>
+
+                <div className="mt-3 bg-amber-50 border-l-4 border-amber-400 p-3 rounded">
+                  <p className="text-xs text-amber-800 font-medium">
+                    {lockMessage}
+                  </p>
+                </div>
+              </div>
+            );
+          }
+
+          // ✅ Week 1-4 normali
           return (
             <div
               key={settimana.id}
