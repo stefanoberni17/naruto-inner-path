@@ -165,9 +165,15 @@ export default function EpisodioPage() {
   const [loadingExtended, setLoadingExtended] = useState(false);
   const [showExtended, setShowExtended] = useState(false);
 
+  // ✅ JOURNALING STATE
+  const [reflectionText, setReflectionText] = useState('');
+  const [savingReflection, setSavingReflection] = useState(false);
+  const [reflectionSaved, setReflectionSaved] = useState(false);
+
   const episodeNumber = parseInt(params.id as string);
   const userId = searchParams.get('userId');
   const TOTAL_STEPS = 4;
+  const MAX_CHARS = 500;
 
   const conceptTags = episodeData?.concepts
     ? episodeData.concepts.split(',').map(c => c.trim()).filter(Boolean)
@@ -186,6 +192,14 @@ export default function EpisodioPage() {
         setEpisodeData(data.episode);
         setCompleted(data.episode.completed);
         setLoading(false);
+
+        // ✅ Carica riflessione esistente
+        const reflectionRes = await fetch(`/api/reflection?userId=${userId}&episodeNumber=${episodeNumber}`);
+        const reflectionData = await reflectionRes.json();
+        if (reflectionData.reflection) {
+          setReflectionText(reflectionData.reflection.reflection_text);
+          setReflectionSaved(true);
+        }
       } catch (error) {
         console.error('Errore caricamento episodio:', error);
         router.back();
@@ -193,6 +207,34 @@ export default function EpisodioPage() {
     };
     fetchEpisode();
   }, [episodeNumber, userId, router]);
+
+  // ✅ Auto-save riflessione dopo 2 secondi di inattività
+  useEffect(() => {
+    if (!reflectionText.trim() || reflectionText.length > MAX_CHARS) return;
+
+    const timer = setTimeout(async () => {
+      setSavingReflection(true);
+      try {
+        await fetch('/api/reflection', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            episodeNumber,
+            reflectionText: reflectionText.trim(),
+            reflectionQuestion: episodeData?.reflectionQuestion || '',
+          }),
+        });
+        setReflectionSaved(true);
+      } catch (error) {
+        console.error('Errore salvataggio riflessione:', error);
+      } finally {
+        setSavingReflection(false);
+      }
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [reflectionText, userId, episodeNumber]);
 
   const handleLoadExtended = async () => {
     if (extendedBlocks.length > 0) {
@@ -214,6 +256,13 @@ export default function EpisodioPage() {
 
   const handleComplete = async () => {
     if (completed || completing) return;
+
+    // ✅ Verifica riflessione salvata
+    if (!reflectionSaved || !reflectionText.trim()) {
+      alert('Devi completare la riflessione prima di procedere.');
+      return;
+    }
+
     setCompleting(true);
     try {
       const response = await fetch('/api/episodio', {
@@ -277,7 +326,7 @@ export default function EpisodioPage() {
               <div className="w-full bg-green-50 border border-green-200 text-green-700 text-sm font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2">
                 ✅ Episodio completato
               </div>
-            ) : (
+            ) : reflectionSaved ? (
               <button
                 onClick={handleComplete}
                 disabled={completing}
@@ -285,6 +334,10 @@ export default function EpisodioPage() {
               >
                 {completing ? <><span className="animate-spin">⏳</span> Salvataggio...</> : <>✓ Completa episodio</>}
               </button>
+            ) : (
+              <div className="w-full bg-amber-50 border border-amber-200 text-amber-700 text-sm font-medium py-3.5 px-4 rounded-xl flex items-center justify-center gap-2">
+                ⚠️ Completa la riflessione per procedere
+              </div>
             )}
           </div>
         </div>
@@ -352,7 +405,7 @@ export default function EpisodioPage() {
             </div>
           )}
 
-          {/* STEP 3 — Domanda riflessiva */}
+          {/* STEP 3 — Domanda riflessiva + JOURNALING */}
           {currentStep === 3 && (
             <div>
               <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-100 mb-4">
@@ -363,9 +416,52 @@ export default function EpisodioPage() {
                   "{episodeData?.reflectionQuestion || 'Domanda non ancora disponibile.'}"
                 </p>
               </div>
-              <p className="text-xs text-gray-500 flex items-center gap-1.5">
-                ✍️ Prenditi un momento prima di andare avanti
-              </p>
+
+              {/* ✅ TEXT AREA JOURNALING */}
+              <div className="mb-3">
+                <label className="block text-xs font-bold text-gray-700 mb-2">
+                  ✍️ La tua riflessione (obbligatoria)
+                </label>
+                <textarea
+                  value={reflectionText}
+                  onChange={(e) => {
+                    if (e.target.value.length <= MAX_CHARS) {
+                      setReflectionText(e.target.value);
+                      setReflectionSaved(false);
+                    }
+                  }}
+                  placeholder="Scrivi qui la tua riflessione..."
+                  className="w-full h-32 px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-200 resize-none text-sm text-gray-700 transition-all"
+                  maxLength={MAX_CHARS}
+                />
+                <div className="flex items-center justify-between mt-2">
+                  <span className={`text-xs ${
+                    reflectionText.length >= MAX_CHARS 
+                      ? 'text-red-500 font-bold' 
+                      : 'text-gray-500'
+                  }`}>
+                    {reflectionText.length}/{MAX_CHARS} caratteri
+                  </span>
+                  {savingReflection && (
+                    <span className="text-xs text-blue-600 flex items-center gap-1">
+                      <span className="animate-spin">⏳</span> Salvataggio...
+                    </span>
+                  )}
+                  {reflectionSaved && !savingReflection && reflectionText.trim() && (
+                    <span className="text-xs text-green-600 flex items-center gap-1">
+                      ✓ Salvato
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {!reflectionText.trim() && (
+                <div className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded">
+                  <p className="text-xs text-amber-800">
+                    💡 Devi scrivere una riflessione per completare questo episodio
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -402,7 +498,7 @@ export default function EpisodioPage() {
                 <div className="w-full bg-green-50 border border-green-200 text-green-700 text-sm font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2">
                   ✅ Episodio completato
                 </div>
-              ) : (
+              ) : reflectionSaved && reflectionText.trim() ? (
                 <button
                   onClick={handleComplete}
                   disabled={completing}
@@ -413,6 +509,10 @@ export default function EpisodioPage() {
                     : <>✓ Completa episodio</>
                   }
                 </button>
+              ) : (
+                <div className="w-full bg-amber-50 border border-amber-200 text-amber-700 text-sm font-medium py-3 px-4 rounded-xl flex items-center justify-center gap-2">
+                  ⚠️ Completa la riflessione per procedere
+                </div>
               )}
             </div>
           )}

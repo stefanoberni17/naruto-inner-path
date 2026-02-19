@@ -20,6 +20,7 @@ export default function ProfiloPage() {
   const [passioni, setPassioni] = useState('');
   const [sogno, setSogno] = useState('');
   const [situazioneAttuale, setSituazioneAttuale] = useState('');
+  const [telegramId, setTelegramId] = useState('');
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -47,6 +48,7 @@ export default function ProfiloPage() {
         setPassioni(profileData.passions || '');
         setSogno(profileData.dream || '');
         setSituazioneAttuale(profileData.current_situation || '');
+        setTelegramId(profileData.telegram_id || '');
       }
 
       setLoading(false);
@@ -71,6 +73,7 @@ export default function ProfiloPage() {
           passions: passioni.trim() || null,
           dream: sogno.trim() || null,
           current_situation: situazioneAttuale.trim() || null,
+          telegram_id: telegramId.trim() || null,
         })
         .eq('user_id', userId);
 
@@ -85,7 +88,6 @@ export default function ProfiloPage() {
     }
   };
 
-  // ✅ LOGOUT FUNCTION
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (!error) {
@@ -133,7 +135,6 @@ export default function ProfiloPage() {
             </div>
           </div>
           
-          {/* ✅ LOGOUT BUTTON */}
           <button
             onClick={handleLogout}
             className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
@@ -192,7 +193,6 @@ export default function ProfiloPage() {
               />
             </div>
 
-            {/* Settimana corrente (read-only) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Settimana corrente
@@ -210,6 +210,37 @@ export default function ProfiloPage() {
               </div>
             </div>
           </div>
+
+          {/* Collega Telegram */}
+            <div className="space-y-4 pb-6 border-b mb-6">
+              <h3 className="font-semibold text-gray-700 text-lg">🤖 Collega Telegram</h3>
+              
+              <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm text-blue-800">
+                <p className="font-medium mb-2">Come trovare il tuo ID Telegram:</p>
+                <ol className="list-decimal list-inside space-y-1 text-blue-700">
+                  <li>Apri Telegram e cerca <strong>@getidsbot</strong></li>
+                  <li>Scrivili qualsiasi messaggio</li>
+                  <li>Copia il numero che ti risponde e incollalo qui sotto</li>
+                </ol>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Il tuo ID Telegram
+                </label>
+                <input
+                  type="text"
+                  value={telegramId}
+                  onChange={(e) => setTelegramId(e.target.value)}
+                  autoComplete="off"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  placeholder="Es. 766672351"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Una volta salvato potrai parlare con il Maestro AI su <strong>@Sensei_naruto_bot</strong>
+                </p>
+              </div>
+            </div>
 
           {/* Il tuo percorso */}
           <div className="space-y-6">
