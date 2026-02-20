@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
@@ -38,8 +38,13 @@ export default function DashboardPage() {
   const [completedEpisodes, setCompletedEpisodes] = useState(0);
   const [weekData, setWeekData] = useState<any>(null);
   
-  // ✅ Popup mantra state
-  const [showMantraPopup, setShowMantraPopup] = useState(false);
+  // ✅ Meditation popup state
+  const [showMeditationPopup, setShowMeditationPopup] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(60);
+  const [isTimerComplete, setIsTimerComplete] = useState(false);
+  const [audioMode, setAudioMode] = useState<'nature' | 'naruto' | 'mute'>('nature');
+  const [breathPhase, setBreathPhase] = useState<'inhale' | 'exhale'>('inhale');
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   
   // ✅ Pratiche state
   const [practices, setPractices] = useState<any[]>([]);
@@ -64,18 +69,12 @@ export default function DashboardPage() {
 
       setProfile(profileData);
 
-      // ✅ Check se mostrare popup mantra
+      // ✅ Check se mostrare popup meditazione
       const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-      const lastShown = profileData?.last_mantra_shown;
+      const lastMeditation = profileData?.last_meditation_completed;
       
-      if (!lastShown || lastShown !== today) {
-        setShowMantraPopup(true);
-        
-        // Aggiorna last_mantra_shown
-        await supabase
-          .from('profiles')
-          .update({ last_mantra_shown: today })
-          .eq('user_id', session.user.id);
+      if (!lastMeditation || lastMeditation !== today) {
+        setShowMeditationPopup(true);
       }
 
       const { count } = await supabase
@@ -104,6 +103,59 @@ export default function DashboardPage() {
     checkUser();
   }, [router]);
 
+  // ✅ Timer countdown
+  useEffect(() => {
+    if (!showMeditationPopup || timeLeft === 0) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          setIsTimerComplete(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [showMeditationPopup, timeLeft]);
+
+  // ✅ Breath animation (4s inhale, 4s exhale)
+  useEffect(() => {
+    if (!showMeditationPopup) return;
+
+    const breathTimer = setInterval(() => {
+      setBreathPhase(prev => prev === 'inhale' ? 'exhale' : 'inhale');
+    }, 4000);
+
+    return () => clearInterval(breathTimer);
+  }, [showMeditationPopup]);
+
+  // ✅ Audio control
+  useEffect(() => {
+    if (!showMeditationPopup) return;
+
+    if (audioMode === 'mute') {
+      audioRef.current?.pause();
+      return;
+    }
+
+    const audioSrc = audioMode === 'nature' 
+      ? '/audio/nature-meditation.mp3' 
+      : '/audio/naruto-meditation.mp3';
+
+    if (audioRef.current) {
+      audioRef.current.src = audioSrc;
+      audioRef.current.volume = 0.3;
+      audioRef.current.loop = true;
+      audioRef.current.play().catch(e => console.log('Audio autoplay blocked:', e));
+    }
+
+    return () => {
+      audioRef.current?.pause();
+    };
+  }, [showMeditationPopup, audioMode]);
+
   const loadPractices = async (userId: string, weekNumber: number) => {
     setLoadingPractices(true);
     try {
@@ -124,14 +176,12 @@ export default function DashboardPage() {
     const currentValue = practice.completed_days[day];
     const newValue = !currentValue;
 
-    // Aggiorna UI ottimisticamente
     setPractices(prev => prev.map(p => 
       p.practice_number === practiceNumber
         ? { ...p, completed_days: { ...p.completed_days, [day]: newValue } }
         : p
     ));
 
-    // Salva su database
     try {
       await fetch('/api/practices', {
         method: 'POST',
@@ -146,13 +196,26 @@ export default function DashboardPage() {
       });
     } catch (error) {
       console.error('Errore salvataggio pratica:', error);
-      // Rollback UI in caso di errore
       setPractices(prev => prev.map(p => 
         p.practice_number === practiceNumber
           ? { ...p, completed_days: { ...p.completed_days, [day]: currentValue } }
           : p
       ));
     }
+  };
+
+  const completeMeditation = async () => {
+    if (!isTimerComplete) return;
+
+    const today = new Date().toISOString().split('T')[0];
+    
+    await supabase
+      .from('profiles')
+      .update({ last_meditation_completed: today })
+      .eq('user_id', user.id);
+
+    setShowMeditationPopup(false);
+    audioRef.current?.pause();
   };
 
   if (loading) {
@@ -175,44 +238,112 @@ export default function DashboardPage() {
   const mantra = (properties.Mantra?.rich_text?.[0]?.plain_text || '')
     .replace(/<br>/g, '\n');
 
-  // Parse pratiche testo in array
   const practicheArray = pratiche.split('\n').filter((p: string) => p.trim().length > 0);
+
+  const minutes = Math.floor(timeLeft / 60);
+  const seconds = timeLeft % 60;
 
   return (
     <>
-      {/* ✅ POPUP MANTRA GIORNALIERO */}
-      {showMantraPopup && mantra && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fadeIn">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative animate-scaleIn">
-            <button
-              onClick={() => setShowMantraPopup(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold"
-            >
-              ×
-            </button>
+      {/* ✅ POPUP MEDITAZIONE CON TIMER */}
+      {showMeditationPopup && mantra && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <audio ref={audioRef} />
+          
+          <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50 rounded-3xl shadow-2xl max-w-lg w-full p-10 relative animate-scaleIn">
             
-            <div className="text-center mb-6">
-              <div className="text-6xl mb-4">🔮</div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                Mantra del Giorno
+            <div className="text-center mb-8">
+              <div className="text-6xl mb-4">🧘‍♂️</div>
+              <h2 className="text-3xl font-bold text-gray-800 mb-2">
+                Respiro Consapevole
               </h2>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-600">
                 {WEEK_NAMES[currentWeek]}
               </p>
             </div>
 
-            <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6 mb-6">
+            {/* Mantra */}
+            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 mb-8 border border-purple-200">
               <p className="text-lg text-purple-900 italic font-medium text-center leading-relaxed">
                 "{mantra}"
               </p>
             </div>
 
+            {/* Timer e animazione respiro */}
+            <div className="flex flex-col items-center mb-8">
+              <div className="relative w-48 h-48 mb-6">
+                {/* Cerchio pulsante */}
+                <div 
+                  className={`absolute inset-0 rounded-full bg-gradient-to-br from-purple-400 to-blue-400 transition-transform duration-[4000ms] ease-in-out ${
+                    breathPhase === 'inhale' ? 'scale-100' : 'scale-75'
+                  }`}
+                  style={{ opacity: 0.6 }}
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-5xl font-bold text-white mb-2">
+                      {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
+                    </div>
+                    <div className="text-sm text-white/90 font-medium">
+                      {breathPhase === 'inhale' ? '🌬️ Inspira...' : '💨 Espira...'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Toggle Audio */}
+              <div className="flex gap-2 bg-white/60 backdrop-blur-sm rounded-full p-2">
+                <button
+                  onClick={() => setAudioMode('nature')}
+                  className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+                    audioMode === 'nature'
+                      ? 'bg-green-500 text-white shadow-lg'
+                      : 'bg-white text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  🌊 Natura
+                </button>
+                <button
+                  onClick={() => setAudioMode('naruto')}
+                  className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+                    audioMode === 'naruto'
+                      ? 'bg-orange-500 text-white shadow-lg'
+                      : 'bg-white text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  🍥 Naruto
+                </button>
+                <button
+                  onClick={() => setAudioMode('mute')}
+                  className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+                    audioMode === 'mute'
+                      ? 'bg-gray-500 text-white shadow-lg'
+                      : 'bg-white text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  🔇 Silenzio
+                </button>
+              </div>
+            </div>
+
+            {/* Bottone completamento */}
             <button
-              onClick={() => setShowMantraPopup(false)}
-              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-3 rounded-xl transition-all"
+              onClick={completeMeditation}
+              disabled={!isTimerComplete}
+              className={`w-full font-bold py-4 rounded-2xl transition-all ${
+                isTimerComplete
+                  ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white cursor-pointer'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
             >
-              Inizia la giornata 🌅
+              {isTimerComplete ? 'Inizia la giornata 🌅' : 'Completa il respiro...'}
             </button>
+
+            {!isTimerComplete && (
+              <p className="text-xs text-center text-gray-500 mt-3">
+                Prenditi questo minuto per te stesso 💙
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -252,10 +383,14 @@ export default function DashboardPage() {
                     <span>Mantra della Settimana</span>
                   </h3>
                   <button
-                    onClick={() => setShowMantraPopup(true)}
+                    onClick={() => {
+                      setShowMeditationPopup(true);
+                      setTimeLeft(60);
+                      setIsTimerComplete(false);
+                    }}
                     className="text-xs text-purple-600 hover:text-purple-800 underline"
                   >
-                    Mostra di nuovo
+                    Ripeti meditazione
                   </button>
                 </div>
                 <p className="text-purple-900 text-lg italic font-medium whitespace-pre-line">
@@ -403,10 +538,10 @@ export default function DashboardPage() {
           to { transform: scale(1); opacity: 1; }
         }
         .animate-fadeIn {
-          animation: fadeIn 0.2s ease-out;
+          animation: fadeIn 0.3s ease-out;
         }
         .animate-scaleIn {
-          animation: scaleIn 0.3s ease-out;
+          animation: scaleIn 0.4s ease-out;
         }
       `}</style>
     </>
