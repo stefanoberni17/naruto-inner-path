@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import BottomTabBar from "@/components/BottomTabBar";
+import GlobalMeditationWrapper from "@/components/GlobalMeditationWrapper";
 
 export const metadata: Metadata = {
   title: "Naruto Inner Path",
@@ -15,8 +16,10 @@ export default function RootLayout({
   return (
     <html lang="it">
       <body className="pb-20">
-        {children}
-        <BottomTabBar />
+        <GlobalMeditationWrapper>
+          {children}
+          <BottomTabBar />
+        </GlobalMeditationWrapper>
       </body>
     </html>
   );

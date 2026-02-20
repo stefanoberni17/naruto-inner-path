@@ -3,29 +3,45 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { getUnlockedWeeks, isWeekUnlockedInBeta, getWeekLockMessage } from '@/lib/weekUnlockLogic';
 
-interface Settimana {
-  id: string;
-  numero: number;
-  settimana: string;
-  titolo: string;
-  tema: string;
-  episodi: string;
-  stato: string;
-}
+const WEEK_NAMES: Record<number, string> = {
+  1: 'Week 1 - La ferita del rifiuto',
+  2: 'Week 2 - La ferita del rifiuto',
+  3: 'Week 3 - Presenza e ascolto',
+  4: 'Week 4 - Presenza e ascolto',
+  5: 'Week 5 - Valore e appartenenza',
+  6: 'Week 6 - Valore e appartenenza',
+};
 
-export default function Home() {
+const WEEK_IDS: Record<number, string> = {
+  1: '2b1655f7-26c7-8025-8afe-df0ed131d708',
+  2: '2b1655f7-26c7-8025-8afe-df0ed131d708',
+  3: '2b1655f7-26c7-8054-a0d4-c4a48c509852',
+  4: '2b1655f7-26c7-8054-a0d4-c4a48c509852',
+  5: '2b1655f7-26c7-8038-bd91-c3fa9e5b31cb',
+  6: '2b1655f7-26c7-8038-bd91-c3fa9e5b31cb',
+};
+
+const DAY_LABELS: Record<string, string> = {
+  day1: '1', day2: '2', day3: '3', day4: '4', day5: '5', day6: '6', day7: '7',
+  day8: '8', day9: '9', day10: '10', day11: '11', day12: '12', day13: '13', day14: '14',
+};
+
+const DAY_KEYS = ['day1', 'day2', 'day3', 'day4', 'day5', 'day6', 'day7', 'day8', 'day9', 'day10', 'day11', 'day12', 'day13', 'day14'] as const;
+type DayKey = typeof DAY_KEYS[number];
+
+export default function HomePage() {
   const router = useRouter();
-  const [settimane, setSettimane] = useState<Settimana[]>([]);
-  const [unlockedWeeks, setUnlockedWeeks] = useState<number[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
-  const [userId, setUserId] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const [completedEpisodes, setCompletedEpisodes] = useState(0);
+  const [weekData, setWeekData] = useState<any>(null);
+  const [practices, setPractices] = useState<any[]>([]);
+  const [loadingPractices, setLoadingPractices] = useState(false);
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -33,195 +49,267 @@ export default function Home() {
         return;
       }
 
-      setUserId(session.user.id);
+      setUser(session.user);
 
-      // ✅ Check onboarding PRIMA di caricare il resto
       const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', session.user.id)
         .single();
 
-      // ✅ Se non ha completato onboarding, redirect
-      if (!profileData?.onboarding_completed) {
-        router.push('/onboarding');
-        return;
-      }
-
       setProfile(profileData);
 
-      // Carica episodi completati
-      const { data: completedEpisodes } = await supabase
+      const { count } = await supabase
         .from('user_episode_progress')
-        .select('episode_number, completed')
+        .select('*', { count: 'exact', head: true })
         .eq('user_id', session.user.id)
         .eq('completed', true);
 
-      // Calcola settimane sbloccate
-      const unlocked = getUnlockedWeeks(completedEpisodes || []);
-      setUnlockedWeeks(unlocked);
+      setCompletedEpisodes(count || 0);
 
-      setCheckingAuth(false);
+      const currentWeek = profileData?.current_week || 1;
+      const weekId = WEEK_IDS[currentWeek];
+      
+      if (weekId) {
+        const response = await fetch(`/api/settimana?id=${weekId}`);
+        const data = await response.json();
+        setWeekData(data);
+      }
+
+      loadPractices(session.user.id, currentWeek);
+      setLoading(false);
     };
 
-    checkAuth();
+    checkUser();
   }, [router]);
 
-  useEffect(() => {
-    if (checkingAuth) return;
-    
-    fetch('/api/settimane')
-      .then(res => res.json())
-      .then(data => {
-        // Filtra solo settimane 1-6 per MVP
-        const settimaneFiltered = (data.settimane || []).filter((s: Settimana) => s.numero <= 6);
-        setSettimane(settimaneFiltered);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('Errore nel caricamento:', err);
-        setLoading(false);
-      });
-  }, [checkingAuth]);
+  const loadPractices = async (userId: string, weekNumber: number) => {
+    setLoadingPractices(true);
+    try {
+      const response = await fetch(`/api/practices?userId=${userId}&weekNumber=${weekNumber}`);
+      const data = await response.json();
+      setPractices(data.practices || []);
+    } catch (error) {
+      console.error('Errore caricamento pratiche:', error);
+    } finally {
+      setLoadingPractices(false);
+    }
+  };
 
-  if (checkingAuth) {
-    return (
-      <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl mb-4">🍥</div>
-          <p className="text-xl text-gray-600">Verifica accesso...</p>
-        </div>
-      </main>
-    );
-  }
+  const togglePracticeDay = async (practiceNumber: number, day: DayKey) => {
+    const practice = practices.find(p => p.practice_number === practiceNumber);
+    if (!practice) return;
+
+    const currentValue = practice.completed_days[day];
+    const newValue = !currentValue;
+
+    setPractices(prev => prev.map(p => 
+      p.practice_number === practiceNumber
+        ? { ...p, completed_days: { ...p.completed_days, [day]: newValue } }
+        : p
+    ));
+
+    try {
+      await fetch('/api/practices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          weekNumber: profile.current_week,
+          practiceNumber,
+          day,
+          completed: newValue,
+        }),
+      });
+    } catch (error) {
+      console.error('Errore salvataggio pratica:', error);
+      setPractices(prev => prev.map(p => 
+        p.practice_number === practiceNumber
+          ? { ...p, completed_days: { ...p.completed_days, [day]: currentValue } }
+          : p
+      ));
+    }
+  };
 
   if (loading) {
     return (
       <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-6xl mb-4 animate-spin">🍥</div>
-          <p className="text-xl text-gray-600">Caricamento settimane...</p>
+          <div className="text-6xl mb-4">🍥</div>
+          <p className="text-xl text-gray-600">Caricamento...</p>
         </div>
       </main>
     );
   }
 
   const currentWeek = profile?.current_week || 1;
+  const progressPercentage = Math.round((completedEpisodes / 19) * 100);
+  
+  const properties = weekData?.page?.properties || {};
+  const pratiche = (properties.Pratiche?.rich_text?.[0]?.plain_text || '')
+    .replace(/<br>/g, '\n');
+  const mantra = (properties.Mantra?.rich_text?.[0]?.plain_text || '')
+    .replace(/<br>/g, '\n');
+
+  const practicheArray = pratiche.split('\n').filter((p: string) => p.trim().length > 0);
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 py-8 px-4 pb-24">
-      {/* Titolo */}
-      <div className="max-w-7xl mx-auto mb-6">
-        <h1 className="text-3xl font-bold text-gray-800 mb-1">
+      <div className="max-w-6xl mx-auto mb-6">
+        <h1 className="text-3xl font-bold text-gray-800">
           Ciao, {profile?.name || 'Guerriero'}! 👋
         </h1>
-        <p className="text-gray-600">
-          {unlockedWeeks.filter(w => w <= 4).length} settimane sbloccate su 4 (versione Beta)
+        <p className="text-gray-600 mt-1">
+          Benvenuto nella tua dashboard personale
         </p>
       </div>
 
-      {/* Grid settimane */}
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {settimane.map((settimana) => {
-          const isUnlocked = unlockedWeeks.includes(settimana.numero);
-          const isCurrentWeek = settimana.numero === currentWeek;
-          const isBetaLocked = !isWeekUnlockedInBeta(settimana.numero);
-          const lockMessage = getWeekLockMessage(settimana.numero);
-          
-          // ✅ Week 5-6 bloccate in Beta
-          if (isBetaLocked) {
-            return (
-              <div
-                key={settimana.id}
-                className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-gray-300 opacity-60"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <span className="text-xs font-semibold px-3 py-1 rounded-full text-gray-600 bg-gray-100">
-                    {settimana.settimana}
-                  </span>
-                  <span className="text-2xl">🔒</span>
-                </div>
-                
-                <h3 className="text-xl font-bold mb-2 text-gray-400">
-                  {settimana.titolo}
-                </h3>
-                
-                <p className="text-sm mb-3 text-gray-400">
-                  {settimana.tema}
-                </p>
-                
-                <div className="text-xs border-t pt-3 text-gray-400">
-                  📺 Episodi: {settimana.episodi}
-                </div>
-
-                <div className="mt-3 bg-amber-50 border-l-4 border-amber-400 p-3 rounded">
-                  <p className="text-xs text-amber-800 font-medium">
-                    {lockMessage}
-                  </p>
-                </div>
-              </div>
-            );
-          }
-
-          // ✅ Week 1-4 normali
-          return (
-            <div
-              key={settimana.id}
-              onClick={() => isUnlocked && router.push(`/settimana/${settimana.id}?userId=${userId}`)}
-              className={`bg-white rounded-lg shadow-lg p-6 transition-all border-l-4 ${
-                isUnlocked 
-                  ? 'cursor-pointer hover:shadow-xl transform hover:scale-102' 
-                  : 'opacity-60 cursor-not-allowed'
-              } ${
-                isCurrentWeek 
-                  ? 'border-orange-500 ring-2 ring-orange-300' 
-                  : isUnlocked 
-                    ? 'border-green-500' 
-                    : 'border-gray-300'
-              }`}
-            >
-              <div className="flex items-start justify-between mb-3">
-                <span className={`text-xs font-semibold px-3 py-1 rounded-full ${
-                  isCurrentWeek 
-                    ? 'text-orange-600 bg-orange-100' 
-                    : isUnlocked
-                      ? 'text-green-600 bg-green-100'
-                      : 'text-gray-600 bg-gray-100'
-                }`}>
-                  {settimana.settimana}
-                  {isCurrentWeek && ' 📍'}
-                </span>
-                <span className="text-2xl">
-                  {isUnlocked ? (isCurrentWeek ? '🎯' : '✅') : '🔒'}
-                </span>
-              </div>
-              
-              <h3 className={`text-xl font-bold mb-2 ${
-                isUnlocked ? 'text-gray-800' : 'text-gray-400'
-              }`}>
-                {settimana.titolo}
-              </h3>
-              
-              <p className={`text-sm mb-3 ${
-                isUnlocked ? 'text-gray-600' : 'text-gray-400'
-              }`}>
-                {settimana.tema}
-              </p>
-              
-              <div className={`text-xs border-t pt-3 ${
-                isUnlocked ? 'text-gray-500' : 'text-gray-400'
-              }`}>
-                📺 Episodi: {settimana.episodi}
-              </div>
-
-              {!isUnlocked && (
-                <div className="mt-3 text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                  🔒 Completa la settimana precedente per sbloccare
-                </div>
-              )}
+      <div className="max-w-6xl mx-auto">
+        <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg shadow-lg p-6 mb-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-orange-100 text-sm mb-1">📍 Sei qui</p>
+              <h2 className="text-2xl font-bold">
+                {WEEK_NAMES[currentWeek] || `Week ${currentWeek}`}
+              </h2>
             </div>
-          );
-        })}
+            <div className="text-5xl">🍥</div>
+          </div>
+        </div>
+
+        {mantra && (
+          <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
+            <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-l-4 border-purple-500 p-6 rounded-lg">
+              <h3 className="text-xl font-bold text-purple-800 flex items-center gap-2 mb-3">
+                <span>🔮</span>
+                <span>Mantra della Settimana</span>
+              </h3>
+              <p className="text-purple-900 text-lg italic font-medium whitespace-pre-line">
+                "{mantra}"
+              </p>
+            </div>
+          </div>
+        )}
+
+        {practicheArray.length > 0 && (
+          <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2 flex items-center gap-2">
+              <span>✨</span>
+              <span>Pratiche della Settimana</span>
+            </h2>
+            <p className="text-sm text-gray-500 mb-6">
+              Opzionale - per aiutarti a ricordare le pratiche nei 14 giorni (2 settimane)
+            </p>
+
+            <div className="space-y-4">
+              {practicheArray.slice(0, 3).map((praticaText: string, index: number) => {
+                const practice = practices.find(p => p.practice_number === index + 1);
+                const completedDays = practice?.completed_days || {};
+                const completedCount = DAY_KEYS.filter(day => completedDays[day]).length;
+
+                return (
+                  <div key={index} className="bg-gradient-to-r from-green-50 to-teal-50 border-l-4 border-green-500 p-5 rounded-lg">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h3 className="font-bold text-green-800 mb-1">
+                          {index + 1}. {praticaText}
+                        </h3>
+                        <p className="text-xs text-green-600">
+                          {completedCount}/14 giorni completati
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 mt-3">
+                      <div className="flex gap-2">
+                        {DAY_KEYS.slice(0, 7).map(day => (
+                          <button
+                            key={day}
+                            onClick={() => togglePracticeDay(index + 1, day)}
+                            disabled={loadingPractices}
+                            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
+                              completedDays[day]
+                                ? 'bg-green-500 text-white'
+                                : 'bg-white text-gray-600 border border-gray-200 hover:border-green-300'
+                            } disabled:opacity-50`}
+                          >
+                            {DAY_LABELS[day]}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        {DAY_KEYS.slice(7, 14).map(day => (
+                          <button
+                            key={day}
+                            onClick={() => togglePracticeDay(index + 1, day)}
+                            disabled={loadingPractices}
+                            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
+                              completedDays[day]
+                                ? 'bg-green-500 text-white'
+                                : 'bg-white text-gray-600 border border-gray-200 hover:border-green-300'
+                            } disabled:opacity-50`}
+                          >
+                            {DAY_LABELS[day]}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <p className="text-xs text-gray-500 mt-4 text-center italic">
+              💡 Questo tracker è solo per te - non influenza il percorso
+            </p>
+          </div>
+        )}
+
+        <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">
+            🎯 Il Tuo Percorso
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Traccia i tuoi progressi attraverso il percorso MVP (19 episodi)
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded">
+              <div className="text-3xl font-bold text-orange-600">{completedEpisodes}</div>
+              <div className="text-sm text-gray-600">Episodi completati</div>
+            </div>
+            
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+              <div className="text-3xl font-bold text-blue-600">19</div>
+              <div className="text-sm text-gray-600">Episodi totali MVP</div>
+            </div>
+            
+            <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded">
+              <div className="text-3xl font-bold text-green-600">{progressPercentage}%</div>
+              <div className="text-sm text-gray-600">Progressione</div>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <div className="flex justify-between text-sm text-gray-600 mb-2">
+              <span>Progresso MVP</span>
+              <span>{completedEpisodes}/19 episodi</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-3">
+              <div 
+                className="bg-gradient-to-r from-orange-500 to-orange-600 h-3 rounded-full transition-all duration-500"
+                style={{ width: `${progressPercentage}%` }}
+              />
+            </div>
+          </div>
+
+          <button
+            onClick={() => router.push('/settimane')}
+            className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-full transition-all transform hover:scale-105"
+          >
+            🚀 Esplora le Settimane
+          </button>
+        </div>
       </div>
     </main>
   );

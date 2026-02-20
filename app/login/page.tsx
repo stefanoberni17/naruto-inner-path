@@ -58,7 +58,7 @@ export default function LoginPage() {
       }
 
       // 4. ✅ Tutto ok, vai alla dashboard
-      router.push('/dashboard');
+      router.push('/');
 
     } catch (error: any) {
       setError(error.message);
