@@ -7,14 +7,14 @@ import { Home, LayoutDashboard, MessageCircle, User } from 'lucide-react';
 export default function BottomTabBar() {
   const pathname = usePathname();
 
-  // Non mostrare tab bar su login/register
-  if (pathname === '/login' || pathname === '/register') {
+  // Non mostrare tab bar su login/register/onboarding
+  if (pathname === '/login' || pathname === '/register' || pathname === '/onboarding') {
     return null;
   }
 
   const tabs = [
-    { href: '/', label: 'Percorso', icon: Home },
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/', label: 'Dashboard', icon: Home },
+    { href: '/settimane', label: 'Percorso', icon: LayoutDashboard },
     { href: '/chat', label: 'Maestro AI', icon: MessageCircle },
     { href: '/profilo', label: 'Profilo', icon: User },
   ];
