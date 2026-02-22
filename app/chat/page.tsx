@@ -1,13 +1,21 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import ChatBot from '@/components/ChatBot';
+import ChatBot, { ChatBotRef } from '@/components/ChatBot';
+
+const suggestions = [
+  "Come posso lavorare sulla ferita del rifiuto?",
+  "Aiutami a riflettere sulla settimana corrente",
+  "Quali pratiche mi consigli per oggi?",
+  "Cosa posso imparare dall'episodio di questa settimana?",
+];
 
 export default function ChatPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const chatBotRef = useRef<ChatBotRef>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -20,6 +28,10 @@ export default function ChatPage() {
     };
     checkAuth();
   }, [router]);
+
+  const handleSuggestionClick = (text: string) => {
+    chatBotRef.current?.sendSuggestion(text);
+  };
 
   if (loading) {
     return (
@@ -38,22 +50,27 @@ export default function ChatPage() {
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">💬 Maestro AI</h1>
           <p className="text-gray-600">
-            Parla con il tuo maestro spirituale personale. Chiedi consigli, 
+            Parla con il tuo maestro spirituale personale. Chiedi consigli,
             condividi riflessioni o ricevi guidance sul tuo percorso.
           </p>
         </div>
 
         <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
-          <h3 className="font-semibold text-orange-800 mb-2">💡 Suggerimenti per iniziare:</h3>
-          <ul className="space-y-1 text-sm text-orange-700">
-            <li>• "Come posso lavorare sulla ferita del rifiuto?"</li>
-            <li>• "Aiutami a riflettere sulla settimana corrente"</li>
-            <li>• "Quali pratiche mi consigli per oggi?"</li>
-            <li>• "Cosa posso imparare dall'episodio di questa settimana?"</li>
-          </ul>
+          <h3 className="font-semibold text-orange-800 mb-3">💡 Suggerimenti per iniziare:</h3>
+          <div className="flex flex-wrap gap-2">
+            {suggestions.map((suggestion, index) => (
+              <button
+                key={index}
+                onClick={() => handleSuggestionClick(suggestion)}
+                className="text-left text-sm bg-white text-orange-700 border border-orange-300 rounded-full px-3 py-1.5 hover:bg-orange-100 hover:border-orange-400 transition-colors active:scale-95"
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <ChatBot />
+        <ChatBot ref={chatBotRef} />
 
         <div className="mt-6 text-center text-sm text-gray-500">
           <p>Le conversazioni sono private e non vengono salvate.</p>

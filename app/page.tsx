@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 const WEEK_NAMES: Record<number, string> = {
   1: 'Week 1 - La ferita del rifiuto',
@@ -39,6 +40,7 @@ export default function HomePage() {
   const [weekData, setWeekData] = useState<any>(null);
   const [practices, setPractices] = useState<any[]>([]);
   const [loadingPractices, setLoadingPractices] = useState(false);
+  const [expandedPractices, setExpandedPractices] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     const checkUser = async () => {
@@ -131,6 +133,18 @@ export default function HomePage() {
     }
   };
 
+  const togglePracticeExpanded = (index: number) => {
+    setExpandedPractices(prev => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  };
+
   if (loading) {
     return (
       <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 flex items-center justify-center">
@@ -192,74 +206,91 @@ export default function HomePage() {
         )}
 
         {practicheArray.length > 0 && (
-          <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-2 flex items-center gap-2">
-              <span>✨</span>
-              <span>Pratiche della Settimana</span>
-            </h2>
-            <p className="text-sm text-gray-500 mb-6">
-              Opzionale - per aiutarti a ricordare le pratiche nei 14 giorni (2 settimane)
-            </p>
+          <div className="bg-white rounded-lg shadow-lg mb-6 overflow-hidden">
+            <div className="p-5 pb-3">
+              <h2 className="text-2xl font-bold text-gray-800 mb-2 flex items-center gap-2">
+                <span>✨</span>
+                <span>Pratiche della Settimana</span>
+              </h2>
+              <p className="text-sm text-gray-500">
+                Opzionale - per aiutarti a ricordare le pratiche nei 14 giorni (2 settimane)
+              </p>
+            </div>
 
-            <div className="space-y-4">
+            <div className="space-y-0">
               {practicheArray.slice(0, 3).map((praticaText: string, index: number) => {
                 const practice = practices.find(p => p.practice_number === index + 1);
                 const completedDays = practice?.completed_days || {};
                 const completedCount = DAY_KEYS.filter(day => completedDays[day]).length;
 
                 return (
-                  <div key={index} className="bg-gradient-to-r from-green-50 to-teal-50 border-l-4 border-green-500 p-5 rounded-lg">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <h3 className="font-bold text-green-800 mb-1">
-                          {index + 1}. {praticaText}
-                        </h3>
+                  <div key={index} className="bg-gradient-to-r from-green-50 to-teal-50 border-l-4 border-green-500 border-b border-b-green-100 last:border-b-0">
+                    <button
+                      onClick={() => togglePracticeExpanded(index)}
+                      className="w-full p-4 text-left"
+                    >
+                      <h3 className="text-sm font-semibold text-green-800">
+                        {index + 1}. {praticaText}
+                      </h3>
+                      <div className="flex items-center justify-between mt-2">
                         <p className="text-xs text-green-600">
                           {completedCount}/14 giorni completati
                         </p>
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center">
+                            <span className="text-xs font-bold text-green-700">{completedCount}</span>
+                          </div>
+                          {expandedPractices.has(index) ? (
+                            <ChevronUp className="w-4 h-4 text-green-600" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-green-600" />
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    </button>
 
-                    <div className="space-y-2 mt-3">
-                      <div className="flex gap-2">
-                        {DAY_KEYS.slice(0, 7).map(day => (
-                          <button
-                            key={day}
-                            onClick={() => togglePracticeDay(index + 1, day)}
-                            disabled={loadingPractices}
-                            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
-                              completedDays[day]
-                                ? 'bg-green-500 text-white'
-                                : 'bg-white text-gray-600 border border-gray-200 hover:border-green-300'
-                            } disabled:opacity-50`}
-                          >
-                            {DAY_LABELS[day]}
-                          </button>
-                        ))}
+                    {expandedPractices.has(index) && (
+                      <div className="px-4 pb-4 space-y-2">
+                        <div className="flex gap-1.5">
+                          {DAY_KEYS.slice(0, 7).map(day => (
+                            <button
+                              key={day}
+                              onClick={() => togglePracticeDay(index + 1, day)}
+                              disabled={loadingPractices}
+                              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                completedDays[day]
+                                  ? 'bg-green-500 text-white'
+                                  : 'bg-white text-gray-600 border border-gray-200 hover:border-green-300'
+                              } disabled:opacity-50`}
+                            >
+                              {DAY_LABELS[day]}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="flex gap-1.5">
+                          {DAY_KEYS.slice(7, 14).map(day => (
+                            <button
+                              key={day}
+                              onClick={() => togglePracticeDay(index + 1, day)}
+                              disabled={loadingPractices}
+                              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                completedDays[day]
+                                  ? 'bg-green-500 text-white'
+                                  : 'bg-white text-gray-600 border border-gray-200 hover:border-green-300'
+                              } disabled:opacity-50`}
+                            >
+                              {DAY_LABELS[day]}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        {DAY_KEYS.slice(7, 14).map(day => (
-                          <button
-                            key={day}
-                            onClick={() => togglePracticeDay(index + 1, day)}
-                            disabled={loadingPractices}
-                            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
-                              completedDays[day]
-                                ? 'bg-green-500 text-white'
-                                : 'bg-white text-gray-600 border border-gray-200 hover:border-green-300'
-                            } disabled:opacity-50`}
-                          >
-                            {DAY_LABELS[day]}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                    )}
                   </div>
                 );
               })}
             </div>
 
-            <p className="text-xs text-gray-500 mt-4 text-center italic">
+            <p className="text-xs text-gray-500 py-3 text-center italic">
               💡 Questo tracker è solo per te - non influenza il percorso
             </p>
           </div>
@@ -273,20 +304,20 @@ export default function HomePage() {
             Traccia i tuoi progressi attraverso il percorso MVP (19 episodi)
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded">
-              <div className="text-3xl font-bold text-orange-600">{completedEpisodes}</div>
-              <div className="text-sm text-gray-600">Episodi completati</div>
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="bg-orange-50 border-l-4 border-orange-500 p-3 rounded">
+              <div className="text-2xl font-bold text-orange-600">{completedEpisodes}</div>
+              <div className="text-xs text-gray-600">Completati</div>
             </div>
-            
-            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-              <div className="text-3xl font-bold text-blue-600">19</div>
-              <div className="text-sm text-gray-600">Episodi totali MVP</div>
+
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-3 rounded">
+              <div className="text-2xl font-bold text-blue-600">19</div>
+              <div className="text-xs text-gray-600">Totali MVP</div>
             </div>
-            
-            <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded">
-              <div className="text-3xl font-bold text-green-600">{progressPercentage}%</div>
-              <div className="text-sm text-gray-600">Progressione</div>
+
+            <div className="bg-green-50 border-l-4 border-green-500 p-3 rounded">
+              <div className="text-2xl font-bold text-green-600">{progressPercentage}%</div>
+              <div className="text-xs text-gray-600">Progresso</div>
             </div>
           </div>
 

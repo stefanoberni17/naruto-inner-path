@@ -126,7 +126,12 @@ export default function ProfiloPage() {
       <div className="max-w-3xl mx-auto mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="text-4xl">👤</div>
+            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-md relative">
+              <span className="text-white font-bold text-xl">
+                {nome ? nome.charAt(0).toUpperCase() : '🍥'}
+              </span>
+              <span className="absolute -bottom-0.5 -right-0.5 text-lg">🍥</span>
+            </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-800">
                 Il tuo Profilo

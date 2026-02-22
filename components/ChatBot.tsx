@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useImperativeHandle } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Send, Loader2, Bot, User } from 'lucide-react';
 
@@ -10,7 +10,11 @@ interface Message {
   timestamp: Date;
 }
 
-export default function ChatBot() {
+export interface ChatBotRef {
+  sendSuggestion: (text: string) => void;
+}
+
+export default function ChatBot({ ref }: { ref?: React.Ref<ChatBotRef> }) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -40,14 +44,12 @@ export default function ChatBot() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const sendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!input.trim() || isLoading) return;
+  const sendMessageText = async (text: string) => {
+    if (!text.trim() || isLoading) return;
 
     const userMessage: Message = {
       role: 'user',
-      content: input,
+      content: text,
       timestamp: new Date(),
     };
 
@@ -57,7 +59,7 @@ export default function ChatBot() {
 
     try {
       console.log('📤 Invio messaggio con userId:', userId);
-      
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -68,7 +70,7 @@ export default function ChatBot() {
             role: m.role,
             content: m.content,
           })),
-          userId, // ✅ PASSA userId
+          userId,
         }),
       });
 
@@ -98,6 +100,15 @@ export default function ChatBot() {
       setIsLoading(false);
     }
   };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    sendMessageText(input);
+  };
+
+  useImperativeHandle(ref, () => ({
+    sendSuggestion: (text: string) => sendMessageText(text),
+  }));
 
   return (
     <div className="flex flex-col h-[600px] bg-white rounded-lg shadow-lg border border-gray-200">
@@ -169,7 +180,7 @@ export default function ChatBot() {
       </div>
 
       {/* Input */}
-      <form onSubmit={sendMessage} className="p-4 border-t border-gray-200">
+      <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200">
         <div className="flex gap-2">
           <input
             type="text"
