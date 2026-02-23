@@ -61,6 +61,12 @@ export default function HomePage() {
         .eq('user_id', session.user.id)
         .single();
 
+      // Redirect onboarding se non completato
+      if (!profileData?.onboarding_completed) {
+        router.push('/onboarding');
+        return;
+      }
+
       setProfile(profileData);
 
       const { count } = await supabase
@@ -190,7 +196,16 @@ export default function HomePage() {
                 </div>
               ) : (
                 <button
-                  onClick={() => router.push(`/episodio/${nextEpisode}`)}
+                  onClick={() => {
+                    // Episodi 1, 6, 13 = primo di ogni gruppo settimane
+                    // → mostra prima la pagina della settimana per introdurre il tema
+                    const WEEK_GROUP_STARTERS = new Set([1, 6, 13]);
+                    if (WEEK_GROUP_STARTERS.has(nextEpisode)) {
+                      router.push(`/settimana/${WEEK_IDS[currentWeek]}`);
+                    } else {
+                      router.push(`/episodio/${nextEpisode}`);
+                    }
+                  }}
                   className="w-full sm:w-auto bg-white text-orange-600 font-bold py-2.5 px-5 rounded-lg hover:bg-orange-50 transition-all text-sm flex items-center justify-center gap-2 shadow-sm"
                 >
                   <span>▶</span>

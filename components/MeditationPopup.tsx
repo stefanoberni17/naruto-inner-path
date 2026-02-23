@@ -26,6 +26,7 @@ export default function MeditationPopup({
   onClose,
 }: MeditationPopupProps) {
   const [showPopup, setShowPopup] = useState(false);
+  const [isFirstTime, setIsFirstTime] = useState(false);
   const [phase, setPhase] = useState<'setup' | 'meditating'>('setup');
   const [selectedDuration, setSelectedDuration] = useState(60);
   const [timeLeft, setTimeLeft] = useState(60);
@@ -50,6 +51,7 @@ export default function MeditationPopup({
       const lastMeditation = profileData?.last_meditation_completed;
 
       if (!lastMeditation || lastMeditation !== today) {
+        setIsFirstTime(!lastMeditation); // null = prima volta in assoluto
         setPhase('setup');
         setSelectedDuration(60);
         setIsTimerComplete(false);
@@ -168,18 +170,27 @@ export default function MeditationPopup({
           /* ── FASE SETUP ── */
           <>
             <div className="text-center mb-6">
-              <div className="text-5xl md:text-6xl mb-3">🧘‍♂️</div>
+              <div className="text-5xl md:text-6xl mb-3">
+                {isFirstTime ? '🌱' : '🧘‍♂️'}
+              </div>
               <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
-                Respiro Consapevole
+                {isFirstTime ? 'Il tuo primo respiro' : 'Respiro Consapevole'}
               </h2>
               <p className="text-xs md:text-sm text-gray-600 mb-2">{weekName}</p>
-              <p className="text-sm md:text-base text-gray-700 font-medium">
-                Prenditi un momento solo per te
+              <p className="text-sm md:text-base text-gray-700 font-medium leading-relaxed">
+                {isFirstTime
+                  ? 'Ogni grande percorso inizia con un respiro.\nPrenditi questo momento — è solo tuo.'
+                  : 'Prenditi un momento solo per te'}
               </p>
             </div>
 
             {/* Mantra */}
             <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 md:p-6 mb-6 border border-purple-200">
+              {isFirstTime && (
+                <p className="text-xs text-purple-600 font-semibold text-center mb-2 uppercase tracking-wide">
+                  Il mantra della tua settimana
+                </p>
+              )}
               <p className="text-base md:text-lg text-purple-900 italic font-medium text-center leading-relaxed">
                 "{mantra}"
               </p>
@@ -188,7 +199,7 @@ export default function MeditationPopup({
             {/* Selezione durata */}
             <div className="mb-6">
               <p className="text-sm text-gray-600 text-center mb-3 font-medium">
-                ⏱️ Quanto vuoi meditare?
+                {isFirstTime ? '⏱️ Quanto tempo hai adesso?' : '⏱️ Quanto vuoi meditare?'}
               </p>
               <div className="grid grid-cols-4 gap-2">
                 {DURATION_OPTIONS.map(({ label, seconds: s }) => (
@@ -218,7 +229,7 @@ export default function MeditationPopup({
               onClick={handleSkip}
               className="w-full text-gray-400 hover:text-gray-600 text-sm py-2 transition-colors"
             >
-              Salta per oggi →
+              {isFirstTime ? 'Lo farò più tardi →' : 'Salta per oggi →'}
             </button>
           </>
         ) : (
