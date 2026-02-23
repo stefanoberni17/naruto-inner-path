@@ -29,7 +29,7 @@ export default function LoginPage() {
 
       console.log('✅ Login riuscito!', data);
 
-      // 2. ✅ Controlla se esiste il profilo
+      // 2. Controlla se esiste il profilo
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -38,26 +38,22 @@ export default function LoginPage() {
 
       if (profileError || !profile) {
         console.error('❌ Profilo non trovato:', profileError);
-        
-        // Logout e redirect a registrazione
         await supabase.auth.signOut();
         setError('Account non trovato. Devi prima registrarti.');
         setLoading(false);
-        
-        // Redirect automatico dopo 2 secondi
         setTimeout(() => {
           router.push('/register');
         }, 2000);
         return;
       }
 
-      // 3. ✅ Controlla onboarding
+      // 3. Controlla onboarding
       if (!profile.onboarding_completed) {
         router.push('/onboarding');
         return;
       }
 
-      // 4. ✅ Tutto ok, vai alla dashboard
+      // 4. Tutto ok, vai alla dashboard
       router.push('/');
 
     } catch (error: any) {
@@ -69,50 +65,63 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="text-6xl mb-4">🍥</div>
-          <h1 className="text-3xl font-bold text-gray-800">
-            Bentornato!
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Accedi al tuo percorso
+    <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 flex flex-col items-center justify-center p-5">
+
+      {/* ── Hero brand ── */}
+      <div className="text-center mb-7 w-full max-w-sm">
+        <div className="text-5xl mb-3">🍥</div>
+        <h1 className="text-2xl font-bold text-gray-800 tracking-tight">
+          Naruto Inner Path
+        </h1>
+        <p className="text-orange-500 font-semibold text-xs mt-1 uppercase tracking-widest">
+          La via del Guerriero Gentile
+        </p>
+
+        {/* Quote dalla Visione */}
+        <div className="mt-4 bg-white/70 backdrop-blur-sm rounded-2xl px-5 py-3 border border-orange-100 shadow-sm">
+          <p className="text-gray-600 text-sm leading-relaxed italic">
+            "La crescita non è diventare qualcuno di diverso.
+            <br />
+            È tornare a casa."
           </p>
         </div>
+      </div>
 
-        {/* Form */}
-        <form onSubmit={handleLogin} className="space-y-6">
+      {/* ── Form card ── */}
+      <div className="bg-white rounded-2xl shadow-xl p-7 w-full max-w-sm">
+        <h2 className="text-xl font-bold text-gray-800 mb-0.5">Bentornato!</h2>
+        <p className="text-gray-500 text-sm mb-6">Il tuo percorso ti aspetta.</p>
+
+        <form onSubmit={handleLogin} className="space-y-5">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
               {error}
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Email
             </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none transition-all text-sm"
               placeholder="tua@email.com"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Password
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none transition-all text-sm"
               placeholder="••••••••"
               required
             />
@@ -121,34 +130,22 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold py-3 px-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
           >
-            {loading ? 'Accesso...' : 'Accedi'}
+            {loading ? 'Accesso in corso…' : 'Accedi'}
           </button>
         </form>
 
         {/* Link registrazione */}
-        <div className="mt-6 text-center">
-          <p className="text-gray-600">
-            Non hai un account?{' '}
-            <button
-              onClick={() => router.push('/register')}
-              className="text-orange-600 hover:text-orange-700 font-semibold"
-            >
-              Registrati
-            </button>
-          </p>
-        </div>
-
-        {/* Back home */}
-        <div className="mt-4 text-center">
+        <p className="mt-5 text-center text-sm text-gray-500">
+          Non hai un account?{' '}
           <button
-            onClick={() => router.push('/')}
-            className="text-sm text-gray-500 hover:text-gray-700"
+            onClick={() => router.push('/register')}
+            className="text-orange-500 hover:text-orange-600 font-semibold"
           >
-            ← Torna alla home
+            Registrati
           </button>
-        </div>
+        </p>
       </div>
     </main>
   );

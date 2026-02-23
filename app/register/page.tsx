@@ -6,44 +6,54 @@ import { supabase } from '@/lib/supabase';
 
 export default function RegisterPage() {
   const router = useRouter();
-  
+
+  // Step: 1 = account + dati base | 2 = percorso personale
+  const [step, setStep] = useState(1);
+
+  // Step 1 — account
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [nome, setNome] = useState('');
   const [eta, setEta] = useState('');
+
+  // Step 2 — percorso (tutti opzionali)
   const [obiettivi, setObiettivi] = useState('');
   const [passioni, setPassioni] = useState('');
   const [sogno, setSogno] = useState('');
   const [situazioneAttuale, setSituazioneAttuale] = useState('');
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
+  // ── Validazione step 1 e avanzamento ──
+  const handleNextStep = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (password !== confirmPassword) {
+      setError('Le password non coincidono');
+      return;
+    }
+    if (password.length < 6) {
+      setError('La password deve essere di almeno 6 caratteri');
+      return;
+    }
+    if (!nome.trim()) {
+      setError('Il nome è obbligatorio');
+      return;
+    }
+
+    setStep(2);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // ── Submit finale ──
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    setSuccess(false);
-
-    if (password !== confirmPassword) {
-      setError('Le password non coincidono');
-      setLoading(false);
-      return;
-    }
-
-    if (password.length < 6) {
-      setError('La password deve essere di almeno 6 caratteri');
-      setLoading(false);
-      return;
-    }
-
-    if (!nome.trim()) {
-      setError('Il nome è obbligatorio');
-      setLoading(false);
-      return;
-    }
 
     try {
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -69,13 +79,12 @@ export default function RegisterPage() {
         });
 
       if (profileError) {
-        console.error('❌ Errore profilo COMPLETO:', profileError);
+        console.error('❌ Errore profilo:', profileError);
         throw new Error(profileError.message || 'Errore nella creazione del profilo');
       }
 
       console.log('✅ Profilo creato!');
       setSuccess(true);
-      // Nessun redirect automatico — l'utente deve prima confermare l'email e poi fare login
 
     } catch (error: any) {
       setError(error.message);
@@ -85,207 +94,303 @@ export default function RegisterPage() {
     }
   };
 
+  // ── Schermata successo ──
+  if (success) {
+    return (
+      <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 flex flex-col items-center justify-center p-5">
+        <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm text-center">
+          <div className="text-5xl mb-4">📬</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+            Controlla la tua email!
+          </h2>
+          <p className="text-gray-600 text-sm leading-relaxed mb-5">
+            Abbiamo inviato un link di conferma a{' '}
+            <strong className="text-gray-800">{email}</strong>.
+            <br />
+            Clicca il link per attivare il tuo account, poi torna qui ad accedere.
+          </p>
+
+          {/* Avviso spam */}
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-6 text-left">
+            <p className="text-amber-800 text-xs font-semibold mb-0.5">
+              📁 Non trovi l'email?
+            </p>
+            <p className="text-amber-700 text-xs leading-relaxed">
+              Controlla la cartella <strong>Spam</strong> o{' '}
+              <strong>Posta indesiderata</strong> — a volte ci finisce per errore.
+              Se non arriva entro qualche minuto, riprova con una email diversa.
+            </p>
+          </div>
+
+          <button
+            onClick={() => router.push('/login')}
+            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-sm"
+          >
+            Vai al Login
+          </button>
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 py-12 px-4">
-      <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-2xl mx-auto">
-        <div className="text-center mb-8">
-          <div className="text-6xl mb-4">🍥</div>
-          <h1 className="text-3xl font-bold text-gray-800">
-            Inizia il tuo viaggio
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Raccontaci un po' di te
+    <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 py-10 px-5">
+      <div className="w-full max-w-sm mx-auto">
+
+        {/* ── Header brand ── */}
+        <div className="text-center mb-6">
+          <div className="text-4xl mb-2">🍥</div>
+          <h1 className="text-xl font-bold text-gray-800">Naruto Inner Path</h1>
+          <p className="text-orange-500 font-semibold text-xs mt-0.5 uppercase tracking-widest">
+            La via del Guerriero Gentile
           </p>
         </div>
 
-        {/* Messaggio successo — sostituisce il form */}
-        {success ? (
-          <div className="text-center py-8">
-            <div className="text-6xl mb-6">📬</div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-3">Controlla la tua email!</h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              Ti abbiamo inviato un link di conferma a <strong>{email}</strong>.<br/>
-              Clicca il link nell'email per attivare il tuo account, poi torna qui ad accedere.
-            </p>
-            <button
-              onClick={() => router.push('/login')}
-              className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-lg transition-all"
+        {/* ── Step indicator ── */}
+        <div className="flex items-center gap-2 mb-6 px-1">
+          {/* Passo 1 */}
+          <div className="flex items-center gap-2 flex-1">
+            <div
+              className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all ${
+                step >= 1
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-gray-200 text-gray-400'
+              }`}
             >
-              Vai al Login
-            </button>
+              {step > 1 ? '✓' : '1'}
+            </div>
+            <span
+              className={`text-xs font-medium truncate ${
+                step === 1 ? 'text-gray-800' : 'text-gray-400'
+              }`}
+            >
+              Il tuo account
+            </span>
           </div>
-        ) : (
-          <form onSubmit={handleRegister} className="space-y-6">
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-                {error}
-              </div>
-            )}
 
-            {/* Email & Password */}
-            <div className="space-y-4 pb-6 border-b">
-              <h3 className="font-semibold text-gray-700">Account</h3>
-              
+          {/* Linea */}
+          <div
+            className={`h-0.5 w-8 shrink-0 rounded-full transition-all ${
+              step > 1 ? 'bg-orange-400' : 'bg-gray-200'
+            }`}
+          />
+
+          {/* Passo 2 */}
+          <div className="flex items-center gap-2 flex-1">
+            <div
+              className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all ${
+                step >= 2
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-gray-200 text-gray-400'
+              }`}
+            >
+              2
+            </div>
+            <span
+              className={`text-xs font-medium truncate ${
+                step === 2 ? 'text-gray-800' : 'text-gray-400'
+              }`}
+            >
+              Il tuo percorso
+            </span>
+          </div>
+        </div>
+
+        {/* ── Card ── */}
+        <div className="bg-white rounded-2xl shadow-xl p-7">
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm mb-5">
+              {error}
+            </div>
+          )}
+
+          {/* ════ STEP 1 ════ */}
+          {step === 1 && (
+            <form onSubmit={handleNextStep} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <h2 className="text-lg font-bold text-gray-800">Crea il tuo account</h2>
+                <p className="text-gray-500 text-sm mt-0.5">Ti vuole meno di un minuto.</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Email *
                 </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none text-sm"
                   placeholder="tua@email.com"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Password *
                 </label>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none text-sm"
                   placeholder="Minimo 6 caratteri"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Conferma Password *
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Conferma password *
                 </label>
                 <input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none text-sm"
                   placeholder="Ripeti la password"
                   required
                 />
               </div>
-            </div>
 
-            {/* Info Personali */}
-            <div className="space-y-4 pb-6 border-b">
-              <h3 className="font-semibold text-gray-700">Su di te</h3>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nome *
+              <div className="border-t border-gray-100 pt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Come ti chiami? *
                 </label>
                 <input
                   type="text"
                   value={nome}
                   onChange={(e) => setNome(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="Come ti chiami?"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none text-sm"
+                  placeholder="Il tuo nome"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Età (opzionale)
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Età{' '}
+                  <span className="text-gray-400 font-normal">(opzionale)</span>
                 </label>
                 <input
                   type="number"
                   value={eta}
                   onChange={(e) => setEta(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none text-sm"
                   placeholder="Es. 25"
                   min="13"
                   max="120"
                 />
               </div>
-            </div>
 
-            {/* Percorso */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-gray-700">Il tuo percorso</h3>
-              <p className="text-sm text-gray-500">
-                Queste info ci aiuteranno a personalizzare l'esperienza (opzionali)
-              </p>
+              <button
+                type="submit"
+                className="w-full bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-sm"
+              >
+                Continua →
+              </button>
+            </form>
+          )}
+
+          {/* ════ STEP 2 ════ */}
+          {step === 2 && (
+            <form onSubmit={handleRegister} className="space-y-5">
+              <div>
+                <h2 className="text-lg font-bold text-gray-800">Il tuo percorso</h2>
+                <p className="text-gray-500 text-sm mt-0.5 leading-relaxed">
+                  Queste info aiutano il Maestro AI a personalizzare la tua esperienza.
+                  Puoi saltarle e aggiungerle dopo dal profilo.
+                </p>
+              </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Quali sono i tuoi obiettivi con questo percorso?
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Quali sono i tuoi obiettivi?{' '}
+                  <span className="text-gray-400 font-normal">(opzionale)</span>
                 </label>
                 <textarea
                   value={obiettivi}
                   onChange={(e) => setObiettivi(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="Es. Voglio lavorare sulla mia autostima, gestire meglio le emozioni..."
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none text-sm resize-none"
+                  placeholder="Es. Lavorare sull'autostima, gestire meglio le emozioni…"
                   rows={3}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Passioni e interessi
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Passioni e interessi{' '}
+                  <span className="text-gray-400 font-normal">(opzionale)</span>
                 </label>
                 <input
                   type="text"
                   value={passioni}
                   onChange={(e) => setPassioni(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="Es. Anime, crescita personale, sport..."
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none text-sm"
+                  placeholder="Es. Anime, crescita personale, sport…"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Il tuo sogno più grande
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Il tuo sogno più grande{' '}
+                  <span className="text-gray-400 font-normal">(opzionale)</span>
                 </label>
                 <input
                   type="text"
                   value={sogno}
                   onChange={(e) => setSogno(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="Es. Diventare la versione migliore di me stesso..."
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none text-sm"
+                  placeholder="Es. Diventare la versione migliore di me…"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Dove ti trovi ora nella vita?
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Dove ti trovi ora nella vita?{' '}
+                  <span className="text-gray-400 font-normal">(opzionale)</span>
                 </label>
                 <textarea
                   value={situazioneAttuale}
                   onChange={(e) => setSituazioneAttuale(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="Es. Sto attraversando un periodo difficile, sto cercando direzione..."
-                  rows={3}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none text-sm resize-none"
+                  placeholder="Es. Periodo difficile, cerco direzione…"
+                  rows={2}
                 />
               </div>
-            </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Creazione account...' : 'Inizia il Percorso'}
-            </button>
-          </form>
-        )}
+              <div className="flex gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => { setStep(1); setError(''); }}
+                  className="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-all"
+                >
+                  ← Indietro
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold py-3 px-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                >
+                  {loading ? 'Creazione…' : 'Inizia 🍥'}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
 
-        {!success && (
-          <div className="mt-6 text-center">
-            <p className="text-gray-600">
-              Hai già un account?{' '}
-              <button
-                onClick={() => router.push('/login')}
-                className="text-orange-600 hover:text-orange-700 font-semibold"
-              >
-                Accedi
-              </button>
-            </p>
-          </div>
-        )}
+        {/* Link login */}
+        <p className="mt-5 text-center text-sm text-gray-500">
+          Hai già un account?{' '}
+          <button
+            onClick={() => router.push('/login')}
+            className="text-orange-500 hover:text-orange-600 font-semibold"
+          >
+            Accedi
+          </button>
+        </p>
       </div>
     </main>
   );

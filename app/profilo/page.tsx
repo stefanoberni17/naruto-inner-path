@@ -294,15 +294,26 @@ export default function ProfiloPage() {
             </div>
           </div>
 
-          {/* Bottone salva */}
-          <div className="mt-8">
+          {/* Bottone salva + feedback inline */}
+          <div className="mt-8 space-y-3">
             <button
               type="submit"
               disabled={saving}
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`w-full font-bold py-3 px-6 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-white ${
+                success
+                  ? 'bg-green-500 hover:bg-green-600'
+                  : 'bg-orange-500 hover:bg-orange-600'
+              }`}
             >
-              {saving ? 'Salvataggio...' : '💾 Salva Modifiche'}
+              {saving ? 'Salvataggio…' : success ? '✅ Salvato!' : '💾 Salva Modifiche'}
             </button>
+
+            {/* Feedback testuale inline (scompare dopo 3 sec insieme al colore del bottone) */}
+            {success && (
+              <p className="text-center text-sm text-green-600 font-medium animate-pulse">
+                Profilo aggiornato con successo
+              </p>
+            )}
           </div>
 
           {/* Logout */}
