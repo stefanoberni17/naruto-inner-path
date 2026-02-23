@@ -42,7 +42,7 @@ export default function HomePage() {
   const [weekData, setWeekData] = useState<any>(null);
   const [practices, setPractices] = useState<any[]>([]);
   const [loadingPractices, setLoadingPractices] = useState(false);
-  const [expandedPractice, setExpandedPractice] = useState<number | null>(null);
+  const [practicesVisible, setPracticesVisible] = useState(true);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -202,13 +202,13 @@ export default function HomePage() {
         })()}
 
         {mantra && (
-          <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
-            <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-l-4 border-purple-500 p-6 rounded-lg mb-4">
-              <h3 className="text-xl font-bold text-purple-800 flex items-center gap-2 mb-3">
+          <div className="bg-white rounded-lg shadow-lg p-5 mb-6">
+            <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-l-4 border-purple-500 p-4 rounded-lg mb-3">
+              <h3 className="text-base font-bold text-purple-800 flex items-center gap-2 mb-2">
                 <span>🔮</span>
                 <span>Mantra della Settimana</span>
               </h3>
-              <p className="text-purple-900 text-lg italic font-medium whitespace-pre-line">
+              <p className="text-purple-900 text-base italic font-medium whitespace-pre-line">
                 "{mantra}"
               </p>
             </div>
@@ -224,63 +224,62 @@ export default function HomePage() {
 
         {practicheArray.length > 0 && (
           <div className="mb-6">
-            <div className="flex items-center justify-between mb-3">
+            <button
+              className="flex items-center justify-between w-full mb-3"
+              onClick={() => setPracticesVisible(v => !v)}
+            >
               <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                 🌿 Pratiche della settimana
               </h2>
-              <span className="text-xs text-gray-400">tracker 14 giorni</span>
-            </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-400">tracker 14 giorni</span>
+                <span className="text-gray-400 text-sm">{practicesVisible ? '▲' : '▼'}</span>
+              </div>
+            </button>
 
-            <div className="space-y-2">
-              {practicheArray.slice(0, 3).map((praticaText: string, index: number) => {
-                const practice = practices.find(p => p.practice_number === index + 1);
-                const completedDays = practice?.completed_days || {};
-                const completedCount = DAY_KEYS.filter(day => completedDays[day]).length;
-                const percentage = Math.round((completedCount / 14) * 100);
-                const isComplete = completedCount === 14;
-                const isExpanded = expandedPractice === index;
+            {practicesVisible && (
+              <div className="space-y-3">
+                {practicheArray.slice(0, 3).map((praticaText: string, index: number) => {
+                  const practice = practices.find(p => p.practice_number === index + 1);
+                  const completedDays = practice?.completed_days || {};
+                  const completedCount = DAY_KEYS.filter(day => completedDays[day]).length;
+                  const percentage = Math.round((completedCount / 14) * 100);
+                  const isComplete = completedCount === 14;
 
-                return (
-                  <div
-                    key={index}
-                    className={`bg-white rounded-2xl shadow-sm border transition-all ${
-                      isComplete ? 'border-green-200' : 'border-gray-100'
-                    }`}
-                  >
-                    {/* Header pratica — cliccabile per espandere */}
-                    <button
-                      className="w-full flex items-center gap-3 p-4 text-left"
-                      onClick={() => setExpandedPractice(isExpanded ? null : index)}
+                  return (
+                    <div
+                      key={index}
+                      className={`bg-white rounded-2xl shadow-sm border transition-all ${
+                        isComplete ? 'border-green-200' : 'border-gray-100'
+                      }`}
                     >
-                      <span className={`w-7 h-7 rounded-full text-white text-xs font-bold flex items-center justify-center flex-shrink-0 ${
-                        isComplete ? 'bg-green-500' : 'bg-gray-300'
-                      }`}>
-                        {isComplete ? '✓' : index + 1}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-800 leading-snug line-clamp-2">{praticaText.split('—')[0].trim()}</p>
-                        <div className="flex items-center gap-2 mt-1.5">
-                          <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full transition-all duration-500"
-                              style={{ width: `${percentage}%` }}
-                            />
+                      {/* Header pratica */}
+                      <div className="flex items-start gap-3 p-4 pb-3">
+                        <span className={`w-7 h-7 rounded-full text-white text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                          isComplete ? 'bg-green-500' : 'bg-gray-300'
+                        }`}>
+                          {isComplete ? '✓' : index + 1}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-800 leading-snug">{praticaText}</p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full transition-all duration-500"
+                                style={{ width: `${percentage}%` }}
+                              />
+                            </div>
+                            <span className={`text-xs font-semibold flex-shrink-0 ${
+                              isComplete ? 'text-green-600' : 'text-gray-400'
+                            }`}>
+                              {completedCount}/14
+                            </span>
                           </div>
-                          <span className={`text-xs font-semibold flex-shrink-0 ${
-                            isComplete ? 'text-green-600' : 'text-gray-400'
-                          }`}>
-                            {completedCount}/14
-                          </span>
                         </div>
                       </div>
-                      <span className="text-gray-300 text-sm flex-shrink-0 ml-1">
-                        {isExpanded ? '▲' : '▼'}
-                      </span>
-                    </button>
 
-                    {/* Day tracker — visibile solo quando espanso */}
-                    {isExpanded && (
-                      <div className="px-4 pb-4 space-y-1.5 border-t border-gray-50 pt-3">
+                      {/* Day dots */}
+                      <div className="px-4 pb-4 space-y-1.5">
                         {[DAY_KEYS.slice(0, 7), DAY_KEYS.slice(7, 14)].map((week, wi) => (
                           <div key={wi} className="flex items-center gap-1">
                             <span className="text-xs text-gray-300 w-8 flex-shrink-0">
@@ -305,15 +304,15 @@ export default function HomePage() {
                           </div>
                         ))}
                       </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                    </div>
+                  );
+                })}
 
-            <p className="text-xs text-gray-400 mt-2 text-center">
-              💡 Il tracker è solo per te — non influenza il percorso
-            </p>
+                <p className="text-xs text-gray-400 mt-2 text-center">
+                  💡 Il tracker è solo per te — non influenza il percorso
+                </p>
+              </div>
+            )}
           </div>
         )}
 

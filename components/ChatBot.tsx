@@ -111,7 +111,7 @@ export default function ChatBot({ ref, suggestions }: { ref?: React.Ref<ChatBotR
   }));
 
   return (
-    <div className="flex flex-col h-[calc(100svh-13rem)] min-h-[380px] max-h-[640px] bg-white rounded-lg shadow-lg border border-gray-200">
+    <div className="flex flex-col flex-1 min-h-0 bg-white rounded-lg shadow-lg border border-gray-200">
       {/* Header */}
       <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-4 rounded-t-lg flex-shrink-0">
         <div className="flex items-center gap-2">

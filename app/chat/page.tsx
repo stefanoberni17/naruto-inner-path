@@ -45,20 +45,9 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white pb-24">
-      <div className="max-w-4xl mx-auto px-4 pt-6 pb-4">
-        <div className="mb-4">
-          <h1 className="text-2xl font-bold text-gray-800 mb-1">💬 Maestro AI</h1>
-          <p className="text-sm text-gray-500">
-            Il tuo specchio consapevole — parla del percorso, chiedi riflessioni, esplora.
-          </p>
-        </div>
-
+    <div className="h-[calc(100dvh-4rem)] flex flex-col bg-gradient-to-b from-orange-50 to-white">
+      <div className="flex-1 flex flex-col min-h-0 max-w-4xl w-full mx-auto px-3 sm:px-4 pt-3 pb-2">
         <ChatBot ref={chatBotRef} suggestions={suggestions} />
-
-        <div className="mt-3 text-center text-xs text-gray-400">
-          Le conversazioni sono private e non vengono salvate.
-        </div>
       </div>
     </div>
   );

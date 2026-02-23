@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import EpisodeCard from '@/components/EpisodeCard';
 import WeekCarousel from '@/components/WeekCarousel';
@@ -125,6 +125,8 @@ function renderBlock(block: any) {
 export default function SettimanaPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const weekParam = searchParams.get('week');
   const episodesRef = useRef<HTMLDivElement>(null);
 
   const [loading, setLoading] = useState(true);
@@ -211,7 +213,9 @@ export default function SettimanaPage() {
 
       const settimanaText = settimanaData.page?.properties?.Settimana?.title?.[0]?.plain_text || '';
       const match = settimanaText.match(/Week (\d+)/);
-      const wn = match ? parseInt(match[1]) : 1;
+      const parsedWn = match ? parseInt(match[1]) : 1;
+      // weekParam from URL takes priority — needed because weeks 1-2, 3-4, 5-6 share the same Notion page ID
+      const wn = weekParam ? parseInt(weekParam) : parsedWn;
       setWeekNumber(wn);
 
       const weekEpsList = WEEK_EPISODES[wn.toString()] || [];
@@ -220,7 +224,7 @@ export default function SettimanaPage() {
       setLoading(false);
     };
     init();
-  }, [params.id, router]);
+  }, [params.id, router, weekParam]);
 
   const scrollToEpisodes = () => {
     episodesRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -324,7 +328,7 @@ export default function SettimanaPage() {
             {nextWeekId && nextWeekInBeta ? (
               <>
                 <button
-                  onClick={() => { setShowWeekCompletePopup(false); router.push(`/settimana/${nextWeekId}`); }}
+                  onClick={() => { setShowWeekCompletePopup(false); router.push(`/settimana/${nextWeekId}?week=${nextWeekNumber}`); }}
                   className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-3 rounded-2xl mb-3 transition-all shadow-md"
                 >
                   Passa alla settimana successiva 🍥
@@ -427,7 +431,7 @@ export default function SettimanaPage() {
       {isWeekComplete && nextWeekId && nextWeekInBeta && (
         <div className="max-w-4xl mx-auto mb-6">
           <button
-            onClick={() => router.push(`/settimana/${nextWeekId}`)}
+            onClick={() => router.push(`/settimana/${nextWeekId}?week=${nextWeekNumber}`)}
             className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 text-lg"
           >
             🍥 Passa alla settimana successiva →

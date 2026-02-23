@@ -163,7 +163,7 @@ export default function SettimanaPage() {
           return (
             <div
               key={settimana.id}
-              onClick={() => isUnlocked && router.push(`/settimana/${settimana.id}?userId=${userId}`)}
+              onClick={() => isUnlocked && router.push(`/settimana/${settimana.id}?week=${settimana.numero}`)}
               className={`bg-white rounded-lg shadow-lg p-6 transition-all border-l-4 ${
                 isUnlocked 
                   ? 'cursor-pointer hover:shadow-xl transform hover:scale-102' 

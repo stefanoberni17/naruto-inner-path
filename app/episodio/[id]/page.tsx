@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
 interface EpisodeData {
   number: number;
@@ -153,7 +154,6 @@ function StepProgress({ current, total }: { current: number; total: number }) {
 export default function EpisodioPage() {
   const params = useParams();
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const [loading, setLoading] = useState(true);
   const [episodeData, setEpisodeData] = useState<EpisodeData | null>(null);
@@ -170,9 +170,9 @@ export default function EpisodioPage() {
   const [reflectionText, setReflectionText] = useState('');
   const [savingReflection, setSavingReflection] = useState(false);
   const [reflectionSaved, setReflectionSaved] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const episodeNumber = parseInt(params.id as string);
-  const userId = searchParams.get('userId');
   const TOTAL_STEPS = 4;
   const MAX_CHARS = 500;
 
@@ -181,6 +181,17 @@ export default function EpisodioPage() {
     : [];
 
   useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setUserId(session.user.id);
+      } else {
+        router.push('/login');
+      }
+    });
+  }, [router]);
+
+  useEffect(() => {
+    if (!userId) return;
     const fetchEpisode = async () => {
       try {
         const response = await fetch(`/api/episodio?number=${episodeNumber}&userId=${userId}`);
