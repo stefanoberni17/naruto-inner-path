@@ -4,7 +4,18 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import EpisodeCard from '@/components/EpisodeCard';
+import WeekCarousel from '@/components/WeekCarousel';
 import { isWeekUnlockedInBeta } from '@/lib/weekUnlockLogic';
+
+// Mappa week number → Notion page ID (fonte unica di verità)
+const WEEK_IDS_MAP: Record<number, string> = {
+  1: '2b1655f7-26c7-8025-8afe-df0ed131d708',
+  2: '2b1655f7-26c7-8025-8afe-df0ed131d708',
+  3: '2b1655f7-26c7-8054-a0d4-c4a48c509852',
+  4: '2b1655f7-26c7-8054-a0d4-c4a48c509852',
+  5: '2b1655f7-26c7-8038-bd91-c3fa9e5b31cb',
+  6: '2b1655f7-26c7-8038-bd91-c3fa9e5b31cb',
+};
 
 const WEEK_EPISODES: Record<string, number[]> = {
   '1': [1, 2, 3, 4, 5],
@@ -37,10 +48,85 @@ const EPISODE_TITLES: Record<number, string> = {
   19: 'The Demon in the Snow',
 };
 
+function renderBlock(block: any) {
+  const { type } = block;
+  switch (type) {
+    case 'paragraph': {
+      const texts = block.paragraph?.rich_text || [];
+      if (texts.length === 0) return <br />;
+      return (
+        <p className="text-gray-700 leading-relaxed text-sm mb-3">
+          {texts.map((t: any, i: number) => {
+            const ann = t.annotations || {};
+            let el: React.ReactNode = t.plain_text;
+            if (ann.bold) el = <strong key={i}>{el}</strong>;
+            if (ann.italic) el = <em key={i}>{el}</em>;
+            return <span key={i}>{el}</span>;
+          })}
+        </p>
+      );
+    }
+    case 'heading_1':
+    case 'heading_2':
+    case 'heading_3': {
+      const texts = block[type]?.rich_text || [];
+      const content = texts.map((t: any) => t.plain_text).join('');
+      const cls = type === 'heading_1'
+        ? 'text-xl font-bold text-gray-800 mt-6 mb-2'
+        : type === 'heading_2'
+        ? 'text-lg font-bold text-gray-800 mt-5 mb-2'
+        : 'text-base font-bold text-gray-700 mt-4 mb-1';
+      const Tag = type === 'heading_1' ? 'h2' : type === 'heading_2' ? 'h3' : 'h4';
+      return <Tag className={cls}>{content}</Tag>;
+    }
+    case 'bulleted_list_item': {
+      const texts = block.bulleted_list_item?.rich_text || [];
+      return (
+        <div className="flex gap-2 mb-1">
+          <span className="text-orange-400 mt-1 flex-shrink-0">•</span>
+          <p className="text-gray-700 text-sm leading-relaxed">{texts.map((t: any) => t.plain_text).join('')}</p>
+        </div>
+      );
+    }
+    case 'numbered_list_item': {
+      const texts = block.numbered_list_item?.rich_text || [];
+      return (
+        <div className="flex gap-2 mb-1">
+          <span className="text-orange-500 font-bold text-sm flex-shrink-0">›</span>
+          <p className="text-gray-700 text-sm leading-relaxed">{texts.map((t: any) => t.plain_text).join('')}</p>
+        </div>
+      );
+    }
+    case 'quote': {
+      const texts = block.quote?.rich_text || [];
+      return (
+        <blockquote className="border-l-4 border-orange-400 bg-orange-50 px-4 py-3 my-3 rounded-r-lg">
+          <p className="text-gray-700 italic text-sm leading-relaxed">{texts.map((t: any) => t.plain_text).join('')}</p>
+        </blockquote>
+      );
+    }
+    case 'callout': {
+      const texts = block.callout?.rich_text || [];
+      const emoji = block.callout?.icon?.emoji || '💡';
+      return (
+        <div className="bg-blue-50 border-l-4 border-blue-400 p-4 my-3 rounded flex items-start gap-3">
+          <span className="text-xl flex-shrink-0">{emoji}</span>
+          <p className="text-gray-700 text-sm leading-relaxed">{texts.map((t: any) => t.plain_text).join('')}</p>
+        </div>
+      );
+    }
+    case 'divider':
+      return <hr className="border-orange-100 my-4" />;
+    default:
+      return null;
+  }
+}
+
 export default function SettimanaPage() {
   const params = useParams();
   const router = useRouter();
   const episodesRef = useRef<HTMLDivElement>(null);
+
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
   const [userId, setUserId] = useState<string>('');
@@ -51,6 +137,11 @@ export default function SettimanaPage() {
   const [showWeekCompletePopup, setShowWeekCompletePopup] = useState(false);
   const [nextWeekId, setNextWeekId] = useState<string | null>(null);
   const [nextWeekNumber, setNextWeekNumber] = useState<number | null>(null);
+
+  // Versione estesa
+  const [showExtended, setShowExtended] = useState(false);
+  const [extendedBlocks, setExtendedBlocks] = useState<any[]>([]);
+  const [loadingExtended, setLoadingExtended] = useState(false);
 
   const loadProgress = async (uid: string): Promise<number[]> => {
     const { data: progress } = await supabase
@@ -66,7 +157,6 @@ export default function SettimanaPage() {
   const checkCompletion = (
     completed: number[],
     weekEps: number[],
-    settimane: any[],
     wn: number,
     triggerPopup: boolean
   ) => {
@@ -74,24 +164,37 @@ export default function SettimanaPage() {
     const allDone = weekEps.every(ep => completed.includes(ep));
     if (allDone) {
       setIsWeekComplete(true);
-      const nextW = settimane.find((s: any) => s.numero === wn + 1);
-      if (nextW) {
-        setNextWeekId(nextW.id);
-        setNextWeekNumber(nextW.numero);
-      }
+      // Usa la mappa diretta invece di cercare nella lista Notion
+      // (weeks 1-2, 3-4, 5-6 condividono la stessa pagina)
+      const nextWn = wn + 1;
+      const nextId = WEEK_IDS_MAP[nextWn] || null;
+      setNextWeekNumber(nextWn);
+      setNextWeekId(nextId);
       if (triggerPopup) setShowWeekCompletePopup(true);
     } else {
       setIsWeekComplete(false);
     }
   };
 
+  const handleLoadExtended = async () => {
+    if (extendedBlocks.length > 0) {
+      setShowExtended(true);
+      return;
+    }
+    setLoadingExtended(true);
+    try {
+      // I blocchi sono già in data.blocks, li usiamo direttamente
+      setExtendedBlocks(data?.blocks || []);
+      setShowExtended(true);
+    } finally {
+      setLoadingExtended(false);
+    }
+  };
+
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.push('/login');
-        return;
-      }
+      if (!session) { router.push('/login'); return; }
       setUserId(session.user.id);
 
       const id = params.id as string;
@@ -103,7 +206,7 @@ export default function SettimanaPage() {
       const settimaneData = await settimaneRes.json();
       setData(settimanaData);
 
-      const settimaneList = (settimaneData.settimane || []).filter((s: any) => s.numero <= 6);
+      const settimaneList = (settimaneData.settimane || []).filter((s: any) => s.numero <= 8);
       setAllSettimane(settimaneList);
 
       const settimanaText = settimanaData.page?.properties?.Settimana?.title?.[0]?.plain_text || '';
@@ -113,13 +216,9 @@ export default function SettimanaPage() {
 
       const weekEpsList = WEEK_EPISODES[wn.toString()] || [];
       const completed = await loadProgress(session.user.id);
-
-      // Controlla completamento senza popup (già completata in sessione precedente)
-      checkCompletion(completed, weekEpsList, settimaneList, wn, false);
-
+      checkCompletion(completed, weekEpsList, wn, false);
       setLoading(false);
     };
-
     init();
   }, [params.id, router]);
 
@@ -143,10 +242,7 @@ export default function SettimanaPage() {
       <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 flex items-center justify-center">
         <div className="text-center">
           <p className="text-xl text-red-600">Errore nel caricamento</p>
-          <button
-            onClick={() => router.push('/')}
-            className="mt-4 bg-orange-500 text-white px-6 py-2 rounded-full"
-          >
+          <button onClick={() => router.push('/')} className="mt-4 bg-orange-500 text-white px-6 py-2 rounded-full">
             Torna alla home
           </button>
         </div>
@@ -159,16 +255,59 @@ export default function SettimanaPage() {
   const titolo = properties.Titolo?.rich_text?.[0]?.plain_text || '';
   const tema = properties['Tema principale']?.rich_text?.[0]?.plain_text || '';
   const episodi = properties.Episodi?.rich_text?.[0]?.plain_text || '';
+
+  // Properties per il carousel
+  const domandaGuida = (properties['Domanda guida']?.rich_text?.[0]?.plain_text || '').replace(/<br>/g, '\n');
+  const essenza = (properties.Essenza?.rich_text?.[0]?.plain_text || '').replace(/<br>/g, '\n');
+  const mantra = (properties.Mantra?.rich_text?.[0]?.plain_text || '').replace(/<br>/g, '\n');
+  const pratiche = (properties.Pratiche?.rich_text?.[0]?.plain_text || '')
+    .split('\n')
+    .map((p: string) => p.trim())
+    .filter(Boolean);
+  const scopertaChiave = (properties['Scoperta chiave']?.rich_text?.[0]?.plain_text || '').replace(/<br>/g, '\n');
+
   const weekEpisodes = WEEK_EPISODES[weekNumber.toString()] || [];
+  const nextWeekInBeta = nextWeekNumber !== null && isWeekUnlockedInBeta(nextWeekNumber);
 
   const handleEpisodeComplete = async () => {
     const completed = await loadProgress(userId);
-    // Controlla completamento con popup (episodio appena completato)
-    checkCompletion(completed, weekEpisodes, allSettimane, weekNumber, true);
+    checkCompletion(completed, weekEpisodes, weekNumber, true);
   };
 
-  const nextWeekInBeta = nextWeekNumber !== null && isWeekUnlockedInBeta(nextWeekNumber);
+  // — VISTA VERSIONE ESTESA —
+  if (showExtended) {
+    return (
+      <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 py-6 px-4 pb-28">
+        <div className="max-w-2xl mx-auto">
+          <button
+            onClick={() => setShowExtended(false)}
+            className="flex items-center gap-2 text-sm text-gray-500 font-medium mb-5 hover:text-orange-600 transition-colors"
+          >
+            ← Torna alla settimana
+          </button>
 
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-4">
+            <span className="text-xs font-bold text-orange-600 bg-orange-100 px-3 py-1 rounded-full">
+              {settimana} · Approfondimento completo
+            </span>
+            <h1 className="text-xl font-extrabold text-gray-800 mt-3 mb-1">{titolo}</h1>
+            <p className="text-orange-600 font-semibold text-sm">🎯 {tema}</p>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            {extendedBlocks.length > 0
+              ? extendedBlocks.map((block: any, i: number) => (
+                  <div key={block.id || i}>{renderBlock(block)}</div>
+                ))
+              : <p className="text-sm text-gray-400 italic">Nessun contenuto aggiuntivo disponibile.</p>
+            }
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // — VISTA PRINCIPALE —
   return (
     <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 py-8 px-4 pb-24">
 
@@ -182,14 +321,10 @@ export default function SettimanaPage() {
             <p className="text-gray-600 text-sm mb-6 leading-relaxed">
               Hai completato tutti gli episodi. Il tuo chakra cresce, shinobi! 🍥
             </p>
-
             {nextWeekId && nextWeekInBeta ? (
               <>
                 <button
-                  onClick={() => {
-                    setShowWeekCompletePopup(false);
-                    router.push(`/settimana/${nextWeekId}`);
-                  }}
+                  onClick={() => { setShowWeekCompletePopup(false); router.push(`/settimana/${nextWeekId}`); }}
                   className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-3 rounded-2xl mb-3 transition-all shadow-md"
                 >
                   Passa alla settimana successiva 🍥
@@ -201,10 +336,10 @@ export default function SettimanaPage() {
                   Rimani qui
                 </button>
               </>
-            ) : nextWeekId && !nextWeekInBeta ? (
+            ) : nextWeekNumber !== null && !nextWeekInBeta ? (
               <>
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 text-xs text-amber-800">
-                  🔒 La prossima settimana sarà disponibile nella versione completa del percorso. Stay tuned!
+                  🔒 La prossima settimana sarà disponibile nella versione completa. Stay tuned!
                 </div>
                 <button
                   onClick={() => setShowWeekCompletePopup(false)}
@@ -225,50 +360,47 @@ export default function SettimanaPage() {
         </div>
       )}
 
-      {/* Header settimana */}
-      <div className="max-w-4xl mx-auto mb-8">
-        <div className="bg-white rounded-lg shadow-lg p-8 border-l-4 border-orange-500">
-          <span className="text-sm font-semibold text-orange-600 bg-orange-100 px-3 py-1 rounded-full">
-            {settimana}
-          </span>
-          {isWeekComplete && (
-            <span className="ml-2 text-sm font-semibold text-green-600 bg-green-100 px-3 py-1 rounded-full">
-              ✅ Completata
+      {/* Header */}
+      <div className="max-w-4xl mx-auto mb-6">
+        <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-orange-500">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <span className="text-sm font-semibold text-orange-600 bg-orange-100 px-3 py-1 rounded-full">
+              {settimana}
             </span>
-          )}
-          <h1 className="text-4xl font-bold text-gray-800 mt-4 mb-2">{titolo}</h1>
-          <p className="text-lg text-gray-600 mb-6">{tema}</p>
+            {isWeekComplete && (
+              <span className="text-sm font-semibold text-green-600 bg-green-100 px-3 py-1 rounded-full">
+                ✅ Completata
+              </span>
+            )}
+          </div>
+          <h1 className="text-3xl font-bold text-gray-800 mb-1">{titolo}</h1>
+          <p className="text-gray-500 text-sm mb-4">{tema}</p>
           <button
             onClick={scrollToEpisodes}
-            className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded-full transition-all shadow-md hover:shadow-lg mb-4"
+            className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded-full transition-all shadow-md"
           >
             📺 Vai agli episodi ↓
           </button>
-          <div className="text-sm text-gray-500 border-t pt-4">📺 Episodi: {episodi}</div>
         </div>
       </div>
 
-      {/* Approfondimento della settimana — collassabile, prima degli episodi */}
-      {data.blocks && data.blocks.length > 0 && (
-        <div className="max-w-4xl mx-auto mb-8">
-          <details className="bg-white rounded-lg shadow-lg overflow-hidden">
-            <summary className="p-6 cursor-pointer font-bold text-gray-800 text-xl flex items-center justify-between list-none hover:bg-orange-50 transition-colors">
-              <span>📖 Approfondimento della settimana</span>
-              <span className="text-sm font-normal text-gray-500 ml-2">Leggi il contesto completo</span>
-            </summary>
-            <div className="px-8 pb-8 prose max-w-none border-t border-gray-100 pt-6">
-              {data.blocks.map((block: any, index: number) => (
-                <div key={block.id || index} className="mb-4">{renderBlock(block)}</div>
-              ))}
-            </div>
-          </details>
-        </div>
-      )}
+      {/* Carousel insegnamento */}
+      <div className="max-w-4xl mx-auto mb-6">
+        <WeekCarousel
+          domandaGuida={domandaGuida}
+          essenza={essenza}
+          mantra={mantra}
+          pratiche={pratiche}
+          scopertaChiave={scopertaChiave}
+          onLoadExtended={handleLoadExtended}
+          loadingExtended={loadingExtended}
+        />
+      </div>
 
       {/* Episodi */}
-      <div className="max-w-4xl mx-auto mb-8" ref={episodesRef}>
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">📺 Episodi della settimana</h2>
+      <div className="max-w-4xl mx-auto mb-6" ref={episodesRef}>
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <h2 className="text-xl font-bold text-gray-800 mb-4">📺 Episodi della settimana</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {weekEpisodes.map((epNum) => {
               const isCompleted = completedEpisodes.includes(epNum);
@@ -290,9 +422,10 @@ export default function SettimanaPage() {
         </div>
       </div>
 
-      {/* Bottone "Passa alla settimana successiva" — visibile quando la settimana è completa */}
+      {/* Bottone prossima settimana */}
+      {/* Bottone "prossima settimana": visibile solo se esiste la pagina Notion e non è beta-locked */}
       {isWeekComplete && nextWeekId && nextWeekInBeta && (
-        <div className="max-w-4xl mx-auto mb-8">
+        <div className="max-w-4xl mx-auto mb-6">
           <button
             onClick={() => router.push(`/settimana/${nextWeekId}`)}
             className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 text-lg"
@@ -301,9 +434,9 @@ export default function SettimanaPage() {
           </button>
         </div>
       )}
-
-      {isWeekComplete && nextWeekId && !nextWeekInBeta && (
-        <div className="max-w-4xl mx-auto mb-8">
+      {/* Messaggio beta: solo quando la prossima settimana supera davvero il limite Beta */}
+      {isWeekComplete && nextWeekNumber !== null && !nextWeekInBeta && (
+        <div className="max-w-4xl mx-auto mb-6">
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
             <p className="text-amber-800 font-semibold text-sm">
               🔒 Hai completato tutte le settimane disponibili in Beta! La versione completa arriva presto. 🍥
@@ -317,107 +450,9 @@ export default function SettimanaPage() {
           from { transform: scale(0.9); opacity: 0; }
           to { transform: scale(1); opacity: 1; }
         }
-        .animate-scaleIn {
-          animation: scaleIn 0.4s ease-out;
-        }
+        .animate-scaleIn { animation: scaleIn 0.4s ease-out; }
       `}</style>
 
     </main>
   );
-}
-
-function renderBlock(block: any) {
-  const { type } = block;
-
-  switch (type) {
-    case 'paragraph':
-      const pTexts = block.paragraph?.rich_text || [];
-      if (pTexts.length === 0) return <br />;
-      return (
-        <p className="text-gray-700 leading-relaxed">
-          {pTexts.map((t: any, i: number) => (
-            <span key={i} className={t.annotations?.bold ? 'font-bold' : ''}>
-              {t.plain_text}
-            </span>
-          ))}
-        </p>
-      );
-
-    case 'heading_1':
-      const h1Texts = block.heading_1?.rich_text || [];
-      return (
-        <h1 className="text-3xl font-bold text-gray-800 mt-8 mb-4">
-          {h1Texts.map((t: any) => t.plain_text).join('')}
-        </h1>
-      );
-
-    case 'heading_2':
-      const h2Texts = block.heading_2?.rich_text || [];
-      return (
-        <h2 className="text-2xl font-bold text-gray-800 mt-6 mb-3">
-          {h2Texts.map((t: any) => t.plain_text).join('')}
-        </h2>
-      );
-
-    case 'heading_3':
-      const h3Texts = block.heading_3?.rich_text || [];
-      return (
-        <h3 className="text-xl font-bold text-gray-700 mt-5 mb-2">
-          {h3Texts.map((t: any) => t.plain_text).join('')}
-        </h3>
-      );
-
-    case 'bulleted_list_item':
-      const liTexts = block.bulleted_list_item?.rich_text || [];
-      return (
-        <li className="text-gray-700 ml-6 mb-2 list-disc">
-          {liTexts.map((t: any) => t.plain_text).join('')}
-        </li>
-      );
-
-    case 'numbered_list_item':
-      const numTexts = block.numbered_list_item?.rich_text || [];
-      return (
-        <li className="text-gray-700 ml-6 mb-2 list-decimal">
-          {numTexts.map((t: any) => t.plain_text).join('')}
-        </li>
-      );
-
-    case 'quote':
-      const quoteTexts = block.quote?.rich_text || [];
-      return (
-        <blockquote className="border-l-4 border-orange-400 pl-4 py-2 my-4 italic text-gray-700 bg-orange-50 rounded">
-          {quoteTexts.map((t: any) => t.plain_text).join('')}
-        </blockquote>
-      );
-
-    case 'divider':
-      return <hr className="my-8 border-gray-300" />;
-
-    case 'toggle':
-      const toggleTexts = block.toggle?.rich_text || [];
-      const toggleTitle = toggleTexts.map((t: any) => t.plain_text).join('');
-      return (
-        <details className="bg-gray-50 p-4 rounded-lg my-3 cursor-pointer">
-          <summary className="font-semibold text-gray-800 cursor-pointer hover:text-orange-600">
-            ▶ {toggleTitle}
-          </summary>
-        </details>
-      );
-
-    case 'callout':
-      const calloutTexts = block.callout?.rich_text || [];
-      const emoji = block.callout?.icon?.emoji || '💡';
-      return (
-        <div className="bg-blue-50 border-l-4 border-blue-400 p-4 my-4 rounded flex items-start gap-3">
-          <span className="text-2xl">{emoji}</span>
-          <p className="text-gray-700">
-            {calloutTexts.map((t: any) => t.plain_text).join('')}
-          </p>
-        </div>
-      );
-
-    default:
-      return null;
-  }
 }

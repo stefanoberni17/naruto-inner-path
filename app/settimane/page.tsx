@@ -69,7 +69,7 @@ export default function SettimanaPage() {
     fetch('/api/settimane')
       .then(res => res.json())
       .then(data => {
-        const settimaneFiltered = (data.settimane || []).filter((s: Settimana) => s.numero <= 6);
+        const settimaneFiltered = (data.settimane || []).filter((s: Settimana) => s.numero <= 6).sort((a: Settimana, b: Settimana) => a.numero - b.numero);
         setSettimane(settimaneFiltered);
         setLoading(false);
       })
@@ -113,8 +113,8 @@ export default function SettimanaPage() {
           {(() => {
             const count = unlockedWeeks.filter(w => w <= 4).length;
             return count === 1
-              ? '1 settimana sbloccata su 4 (versione Beta)'
-              : `${count} settimane sbloccate su 4 (versione Beta)`;
+              ? '1 settimana sbloccata · Beta: 4 disponibili, 4 in arrivo'
+              : `${count} settimane sbloccate · Beta: 4 disponibili, 4 in arrivo`;
           })()}
         </p>
       </div>
@@ -218,6 +218,50 @@ export default function SettimanaPage() {
             </div>
           );
         })}
+
+        {/* Settimane 7-8 — Prossimamente */}
+        {[
+          { numero: 7, label: 'Week 7', titolo: 'Il Risveglio del Guerriero', tema: 'Forza interiore e identità autentica', episodi: '20-26' },
+          { numero: 8, label: 'Week 8', titolo: 'La Via del Maestro', tema: 'Trasmettere e servire', episodi: '27-33' },
+        ].map((w) => (
+          <div
+            key={w.numero}
+            className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-dashed border-orange-200 opacity-70 relative overflow-hidden"
+          >
+            {/* Sfondo decorativo */}
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-50/40 to-transparent pointer-events-none" />
+
+            <div className="relative">
+              <div className="flex items-start justify-between mb-3">
+                <span className="text-xs font-semibold px-3 py-1 rounded-full text-orange-600 bg-orange-50 border border-orange-200">
+                  {w.label}
+                </span>
+                <span className="text-xs font-bold text-orange-500 bg-orange-50 border border-orange-200 px-2 py-1 rounded-full">
+                  🔜 Prossimamente
+                </span>
+              </div>
+
+              <h3 className="text-xl font-bold mb-2 text-gray-500">
+                {w.titolo}
+              </h3>
+
+              <p className="text-sm mb-3 text-gray-400">
+                {w.tema}
+              </p>
+
+              <div className="text-xs border-t border-dashed border-gray-200 pt-3 text-gray-400 mb-3">
+                📺 Episodi: {w.episodi}
+              </div>
+
+              <div className="bg-orange-50 border border-orange-100 rounded-lg p-3 text-center">
+                <p className="text-xs text-orange-700 font-medium">
+                  Disponibile nella versione completa del percorso 🍥
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+
       </div>
     </main>
   );

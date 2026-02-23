@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+// lucide-react not needed here anymore
 import { useMeditation } from '@/components/MeditationContext';
 
 const WEEK_NAMES: Record<number, string> = {
@@ -42,7 +42,6 @@ export default function HomePage() {
   const [weekData, setWeekData] = useState<any>(null);
   const [practices, setPractices] = useState<any[]>([]);
   const [loadingPractices, setLoadingPractices] = useState(false);
-  const [expandedPractices, setExpandedPractices] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     const checkUser = async () => {
@@ -135,18 +134,6 @@ export default function HomePage() {
     }
   };
 
-  const togglePracticeExpanded = (index: number) => {
-    setExpandedPractices(prev => {
-      const next = new Set(prev);
-      if (next.has(index)) {
-        next.delete(index);
-      } else {
-        next.add(index);
-      }
-      return next;
-    });
-  };
-
   if (loading) {
     return (
       <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 flex items-center justify-center">
@@ -215,92 +202,87 @@ export default function HomePage() {
         )}
 
         {practicheArray.length > 0 && (
-          <div className="bg-white rounded-lg shadow-lg mb-6 overflow-hidden">
-            <div className="p-5 pb-3">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2 flex items-center gap-2">
-                <span>✨</span>
-                <span>Pratiche della Settimana</span>
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                🌿 Pratiche della settimana
               </h2>
-              <p className="text-sm text-gray-500">
-                Opzionale - per aiutarti a ricordare le pratiche nei 14 giorni (2 settimane)
-              </p>
+              <span className="text-xs text-gray-400">tracker 14 giorni</span>
             </div>
 
-            <div className="space-y-0">
+            <div className="space-y-3">
               {practicheArray.slice(0, 3).map((praticaText: string, index: number) => {
                 const practice = practices.find(p => p.practice_number === index + 1);
                 const completedDays = practice?.completed_days || {};
                 const completedCount = DAY_KEYS.filter(day => completedDays[day]).length;
+                const percentage = Math.round((completedCount / 14) * 100);
+                const isComplete = completedCount === 14;
 
                 return (
-                  <div key={index} className="bg-gradient-to-r from-green-50 to-teal-50 border-l-4 border-green-500 border-b border-b-green-100 last:border-b-0">
-                    <button
-                      onClick={() => togglePracticeExpanded(index)}
-                      className="w-full p-4 text-left"
-                    >
-                      <h3 className="text-sm font-semibold text-green-800">
-                        {index + 1}. {praticaText}
-                      </h3>
-                      <div className="flex items-center justify-between mt-2">
-                        <p className="text-xs text-green-600">
-                          {completedCount}/14 giorni completati
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center">
-                            <span className="text-xs font-bold text-green-700">{completedCount}</span>
+                  <div
+                    key={index}
+                    className={`bg-white rounded-2xl shadow-sm border transition-all ${
+                      isComplete ? 'border-green-200' : 'border-gray-100'
+                    }`}
+                  >
+                    {/* Header pratica */}
+                    <div className="flex items-start gap-3 p-4 pb-3">
+                      <span className={`w-7 h-7 rounded-full text-white text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                        isComplete ? 'bg-green-500' : 'bg-gray-300'
+                      }`}>
+                        {isComplete ? '✓' : index + 1}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-800 leading-snug">{praticaText}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full transition-all duration-500"
+                              style={{ width: `${percentage}%` }}
+                            />
                           </div>
-                          {expandedPractices.has(index) ? (
-                            <ChevronUp className="w-4 h-4 text-green-600" />
-                          ) : (
-                            <ChevronDown className="w-4 h-4 text-green-600" />
-                          )}
+                          <span className={`text-xs font-semibold flex-shrink-0 ${
+                            isComplete ? 'text-green-600' : 'text-gray-400'
+                          }`}>
+                            {completedCount}/14
+                          </span>
                         </div>
                       </div>
-                    </button>
+                    </div>
 
-                    {expandedPractices.has(index) && (
-                      <div className="px-4 pb-4 space-y-2">
-                        <div className="flex gap-1.5">
-                          {DAY_KEYS.slice(0, 7).map(day => (
-                            <button
-                              key={day}
-                              onClick={() => togglePracticeDay(index + 1, day)}
-                              disabled={loadingPractices}
-                              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                                completedDays[day]
-                                  ? 'bg-green-500 text-white'
-                                  : 'bg-white text-gray-600 border border-gray-200 hover:border-green-300'
-                              } disabled:opacity-50`}
-                            >
-                              {DAY_LABELS[day]}
-                            </button>
-                          ))}
+                    {/* Day dots */}
+                    <div className="px-4 pb-4 space-y-1.5">
+                      {[DAY_KEYS.slice(0, 7), DAY_KEYS.slice(7, 14)].map((week, wi) => (
+                        <div key={wi} className="flex items-center gap-1">
+                          <span className="text-xs text-gray-300 w-8 flex-shrink-0">
+                            S{wi + 1}
+                          </span>
+                          <div className="flex gap-1 flex-1">
+                            {week.map(day => (
+                              <button
+                                key={day}
+                                onClick={() => togglePracticeDay(index + 1, day)}
+                                disabled={loadingPractices}
+                                className={`flex-1 h-7 rounded-lg text-xs font-bold transition-all active:scale-95 ${
+                                  completedDays[day]
+                                    ? 'bg-green-500 text-white shadow-sm'
+                                    : 'bg-gray-50 text-gray-400 border border-gray-200 hover:border-green-300 hover:bg-green-50'
+                                } disabled:opacity-50`}
+                              >
+                                {completedDays[day] ? '✓' : DAY_LABELS[day]}
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                        <div className="flex gap-1.5">
-                          {DAY_KEYS.slice(7, 14).map(day => (
-                            <button
-                              key={day}
-                              onClick={() => togglePracticeDay(index + 1, day)}
-                              disabled={loadingPractices}
-                              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                                completedDays[day]
-                                  ? 'bg-green-500 text-white'
-                                  : 'bg-white text-gray-600 border border-gray-200 hover:border-green-300'
-                              } disabled:opacity-50`}
-                            >
-                              {DAY_LABELS[day]}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                      ))}
+                    </div>
                   </div>
                 );
               })}
             </div>
 
-            <p className="text-xs text-gray-500 py-3 text-center italic">
-              💡 Questo tracker è solo per te - non influenza il percorso
+            <p className="text-xs text-gray-400 mt-2 text-center">
+              💡 Il tracker è solo per te — non influenza il percorso
             </p>
           </div>
         )}
