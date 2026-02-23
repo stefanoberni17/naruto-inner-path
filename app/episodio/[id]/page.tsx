@@ -160,6 +160,7 @@ export default function EpisodioPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [completing, setCompleting] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   const [extendedBlocks, setExtendedBlocks] = useState<any[]>([]);
   const [loadingExtended, setLoadingExtended] = useState(false);
@@ -273,7 +274,7 @@ export default function EpisodioPage() {
       if (response.ok) {
         setCompleted(true);
         setCompleting(false);
-        setTimeout(() => router.back(), 1200);
+        setShowCelebration(true);
       }
     } catch (error) {
       console.error('Errore completamento:', error);
@@ -289,6 +290,32 @@ export default function EpisodioPage() {
           <p className="text-xl text-gray-600">Caricamento episodio...</p>
         </div>
       </main>
+    );
+  }
+
+  // Schermata di celebrazione completamento
+  if (showCelebration) {
+    return (
+      <div className="fixed inset-0 bg-gradient-to-br from-orange-500 via-orange-600 to-amber-500 flex items-center justify-center z-50 p-6">
+        <div className="text-center text-white">
+          <div className="text-8xl mb-4 animate-bounce">🍥</div>
+          <h2 className="text-3xl font-extrabold mb-3">
+            Episodio completato!
+          </h2>
+          <p className="text-lg text-orange-100 mb-2 font-medium">
+            Episodio {episodeData?.number} · {episodeData?.title}
+          </p>
+          <p className="text-sm text-orange-200 italic mt-6">
+            "Ogni passo sul tuo percorso ti rende più intero."
+          </p>
+          <button
+            onClick={() => router.back()}
+            className="mt-10 bg-white text-orange-600 font-bold px-8 py-3 rounded-full shadow-lg hover:bg-orange-50 transition-all hover:scale-105 active:scale-95"
+          >
+            Continua il percorso →
+          </button>
+        </div>
+      </div>
     );
   }
 

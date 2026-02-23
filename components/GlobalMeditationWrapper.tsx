@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import MeditationPopup from './MeditationPopup';
+import { MeditationContext } from './MeditationContext';
 
 const WEEK_NAMES: Record<number, string> = {
   1: 'Week 1-2 - La ferita del rifiuto',
@@ -25,6 +26,7 @@ export default function GlobalMeditationWrapper({ children }: { children: React.
   const [userId, setUserId] = useState<string>('');
   const [mantra, setMantra] = useState<string>('');
   const [weekName, setWeekName] = useState<string>('');
+  const [manualOpen, setManualOpen] = useState(false);
 
   // Skip popup su login/register/onboarding
   const skipPages = ['/login', '/register', '/onboarding'];
@@ -45,15 +47,15 @@ export default function GlobalMeditationWrapper({ children }: { children: React.
 
       const currentWeek = profileData?.current_week || 1;
       const weekId = WEEK_IDS[currentWeek];
-      
+
       if (weekId) {
         const response = await fetch(`/api/settimana?id=${weekId}`);
         const data = await response.json();
-        
+
         const properties = data?.page?.properties || {};
         const mantraText = (properties.Mantra?.rich_text?.[0]?.plain_text || '')
           .replace(/<br>/g, '\n');
-        
+
         setMantra(mantraText);
         setWeekName(WEEK_NAMES[currentWeek] || `Week ${currentWeek}`);
       }
@@ -62,16 +64,21 @@ export default function GlobalMeditationWrapper({ children }: { children: React.
     init();
   }, [pathname, shouldShowPopup]);
 
+  const openMeditation = () => setManualOpen(true);
+  const handleClose = () => setManualOpen(false);
+
   return (
-    <>
+    <MeditationContext.Provider value={{ openMeditation, mantra, weekName }}>
       {shouldShowPopup && userId && mantra && (
-        <MeditationPopup 
-          mantra={mantra} 
-          weekName={weekName} 
+        <MeditationPopup
+          mantra={mantra}
+          weekName={weekName}
           userId={userId}
+          manualOpen={manualOpen}
+          onClose={handleClose}
         />
       )}
       {children}
-    </>
+    </MeditationContext.Provider>
   );
 }

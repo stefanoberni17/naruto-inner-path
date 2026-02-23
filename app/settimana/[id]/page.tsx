@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import EpisodeCard from '@/components/EpisodeCard';
+import { isWeekUnlockedInBeta } from '@/lib/weekUnlockLogic';
 
 const WEEK_EPISODES: Record<string, number[]> = {
   '1': [1, 2, 3, 4, 5],
@@ -45,14 +46,43 @@ export default function SettimanaPage() {
   const [userId, setUserId] = useState<string>('');
   const [completedEpisodes, setCompletedEpisodes] = useState<number[]>([]);
   const [weekNumber, setWeekNumber] = useState<number>(1);
+  const [allSettimane, setAllSettimane] = useState<any[]>([]);
+  const [isWeekComplete, setIsWeekComplete] = useState(false);
+  const [showWeekCompletePopup, setShowWeekCompletePopup] = useState(false);
+  const [nextWeekId, setNextWeekId] = useState<string | null>(null);
+  const [nextWeekNumber, setNextWeekNumber] = useState<number | null>(null);
 
-  const loadProgress = async (uid: string) => {
+  const loadProgress = async (uid: string): Promise<number[]> => {
     const { data: progress } = await supabase
       .from('user_episode_progress')
       .select('episode_number, completed')
       .eq('user_id', uid)
       .eq('completed', true);
-    setCompletedEpisodes((progress || []).map(p => p.episode_number));
+    const nums = (progress || []).map((p: any) => p.episode_number);
+    setCompletedEpisodes(nums);
+    return nums;
+  };
+
+  const checkCompletion = (
+    completed: number[],
+    weekEps: number[],
+    settimane: any[],
+    wn: number,
+    triggerPopup: boolean
+  ) => {
+    if (weekEps.length === 0) return;
+    const allDone = weekEps.every(ep => completed.includes(ep));
+    if (allDone) {
+      setIsWeekComplete(true);
+      const nextW = settimane.find((s: any) => s.numero === wn + 1);
+      if (nextW) {
+        setNextWeekId(nextW.id);
+        setNextWeekNumber(nextW.numero);
+      }
+      if (triggerPopup) setShowWeekCompletePopup(true);
+    } else {
+      setIsWeekComplete(false);
+    }
   };
 
   useEffect(() => {
@@ -65,16 +95,28 @@ export default function SettimanaPage() {
       setUserId(session.user.id);
 
       const id = params.id as string;
-      const response = await fetch(`/api/settimana?id=${id}`);
-      const settimanaData = await response.json();
+      const [settimanaRes, settimaneRes] = await Promise.all([
+        fetch(`/api/settimana?id=${id}`),
+        fetch('/api/settimane'),
+      ]);
+      const settimanaData = await settimanaRes.json();
+      const settimaneData = await settimaneRes.json();
       setData(settimanaData);
+
+      const settimaneList = (settimaneData.settimane || []).filter((s: any) => s.numero <= 6);
+      setAllSettimane(settimaneList);
 
       const settimanaText = settimanaData.page?.properties?.Settimana?.title?.[0]?.plain_text || '';
       const match = settimanaText.match(/Week (\d+)/);
       const wn = match ? parseInt(match[1]) : 1;
       setWeekNumber(wn);
 
-      await loadProgress(session.user.id);
+      const weekEpsList = WEEK_EPISODES[wn.toString()] || [];
+      const completed = await loadProgress(session.user.id);
+
+      // Controlla completamento senza popup (già completata in sessione precedente)
+      checkCompletion(completed, weekEpsList, settimaneList, wn, false);
+
       setLoading(false);
     };
 
@@ -119,12 +161,69 @@ export default function SettimanaPage() {
   const episodi = properties.Episodi?.rich_text?.[0]?.plain_text || '';
   const weekEpisodes = WEEK_EPISODES[weekNumber.toString()] || [];
 
-  const handleEpisodeComplete = () => {
-    loadProgress(userId);
+  const handleEpisodeComplete = async () => {
+    const completed = await loadProgress(userId);
+    // Controlla completamento con popup (episodio appena completato)
+    checkCompletion(completed, weekEpisodes, allSettimane, weekNumber, true);
   };
+
+  const nextWeekInBeta = nextWeekNumber !== null && isWeekUnlockedInBeta(nextWeekNumber);
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 py-8 px-4 pb-24">
+
+      {/* Popup settimana completata */}
+      {showWeekCompletePopup && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-scaleIn">
+            <div className="text-7xl mb-4 animate-bounce">🏆</div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Settimana completata!</h2>
+            <p className="text-orange-700 font-semibold text-sm mb-1">{settimana}</p>
+            <p className="text-gray-600 text-sm mb-6 leading-relaxed">
+              Hai completato tutti gli episodi. Il tuo chakra cresce, shinobi! 🍥
+            </p>
+
+            {nextWeekId && nextWeekInBeta ? (
+              <>
+                <button
+                  onClick={() => {
+                    setShowWeekCompletePopup(false);
+                    router.push(`/settimana/${nextWeekId}`);
+                  }}
+                  className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-3 rounded-2xl mb-3 transition-all shadow-md"
+                >
+                  Passa alla settimana successiva 🍥
+                </button>
+                <button
+                  onClick={() => setShowWeekCompletePopup(false)}
+                  className="w-full text-gray-400 hover:text-gray-600 text-sm py-2 transition-colors"
+                >
+                  Rimani qui
+                </button>
+              </>
+            ) : nextWeekId && !nextWeekInBeta ? (
+              <>
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 text-xs text-amber-800">
+                  🔒 La prossima settimana sarà disponibile nella versione completa del percorso. Stay tuned!
+                </div>
+                <button
+                  onClick={() => setShowWeekCompletePopup(false)}
+                  className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold py-3 rounded-2xl transition-all"
+                >
+                  Continua 🌅
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setShowWeekCompletePopup(false)}
+                className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold py-3 rounded-2xl transition-all"
+              >
+                Continua il percorso 🌅
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Header settimana */}
       <div className="max-w-4xl mx-auto mb-8">
@@ -132,6 +231,11 @@ export default function SettimanaPage() {
           <span className="text-sm font-semibold text-orange-600 bg-orange-100 px-3 py-1 rounded-full">
             {settimana}
           </span>
+          {isWeekComplete && (
+            <span className="ml-2 text-sm font-semibold text-green-600 bg-green-100 px-3 py-1 rounded-full">
+              ✅ Completata
+            </span>
+          )}
           <h1 className="text-4xl font-bold text-gray-800 mt-4 mb-2">{titolo}</h1>
           <p className="text-lg text-gray-600 mb-6">{tema}</p>
           <button
@@ -144,23 +248,24 @@ export default function SettimanaPage() {
         </div>
       </div>
 
-      {/* Contenuto della settimana */}
-      <div className="max-w-4xl mx-auto mb-8">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">📖 Contenuto della settimana</h2>
-          {data.blocks && data.blocks.length > 0 ? (
-            <div className="prose max-w-none">
+      {/* Approfondimento della settimana — collassabile, prima degli episodi */}
+      {data.blocks && data.blocks.length > 0 && (
+        <div className="max-w-4xl mx-auto mb-8">
+          <details className="bg-white rounded-lg shadow-lg overflow-hidden">
+            <summary className="p-6 cursor-pointer font-bold text-gray-800 text-xl flex items-center justify-between list-none hover:bg-orange-50 transition-colors">
+              <span>📖 Approfondimento della settimana</span>
+              <span className="text-sm font-normal text-gray-500 ml-2">Leggi il contesto completo</span>
+            </summary>
+            <div className="px-8 pb-8 prose max-w-none border-t border-gray-100 pt-6">
               {data.blocks.map((block: any, index: number) => (
                 <div key={block.id || index} className="mb-4">{renderBlock(block)}</div>
               ))}
             </div>
-          ) : (
-            <p className="text-gray-600">Contenuto completo disponibile su Notion.</p>
-          )}
+          </details>
         </div>
-      </div>
+      )}
 
-      {/* Episodi in fondo */}
+      {/* Episodi */}
       <div className="max-w-4xl mx-auto mb-8" ref={episodesRef}>
         <div className="bg-white rounded-lg shadow-lg p-6">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">📺 Episodi della settimana</h2>
@@ -184,6 +289,38 @@ export default function SettimanaPage() {
           </div>
         </div>
       </div>
+
+      {/* Bottone "Passa alla settimana successiva" — visibile quando la settimana è completa */}
+      {isWeekComplete && nextWeekId && nextWeekInBeta && (
+        <div className="max-w-4xl mx-auto mb-8">
+          <button
+            onClick={() => router.push(`/settimana/${nextWeekId}`)}
+            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 text-lg"
+          >
+            🍥 Passa alla settimana successiva →
+          </button>
+        </div>
+      )}
+
+      {isWeekComplete && nextWeekId && !nextWeekInBeta && (
+        <div className="max-w-4xl mx-auto mb-8">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
+            <p className="text-amber-800 font-semibold text-sm">
+              🔒 Hai completato tutte le settimane disponibili in Beta! La versione completa arriva presto. 🍥
+            </p>
+          </div>
+        </div>
+      )}
+
+      <style jsx global>{`
+        @keyframes scaleIn {
+          from { transform: scale(0.9); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        .animate-scaleIn {
+          animation: scaleIn 0.4s ease-out;
+        }
+      `}</style>
 
     </main>
   );

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useMeditation } from '@/components/MeditationContext';
 
 const WEEK_NAMES: Record<number, string> = {
   1: 'Week 1 - La ferita del rifiuto',
@@ -33,6 +34,7 @@ type DayKey = typeof DAY_KEYS[number];
 
 export default function HomePage() {
   const router = useRouter();
+  const { openMeditation } = useMeditation();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -174,7 +176,7 @@ export default function HomePage() {
           Ciao, {profile?.name || 'Guerriero'}! 👋
         </h1>
         <p className="text-gray-600 mt-1">
-          Benvenuto nella tua dashboard personale
+          Bentornato nel tuo percorso 🍥
         </p>
       </div>
 
@@ -193,7 +195,7 @@ export default function HomePage() {
 
         {mantra && (
           <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
-            <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-l-4 border-purple-500 p-6 rounded-lg">
+            <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-l-4 border-purple-500 p-6 rounded-lg mb-4">
               <h3 className="text-xl font-bold text-purple-800 flex items-center gap-2 mb-3">
                 <span>🔮</span>
                 <span>Mantra della Settimana</span>
@@ -202,6 +204,13 @@ export default function HomePage() {
                 "{mantra}"
               </p>
             </div>
+            <button
+              onClick={openMeditation}
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-all transform hover:scale-[1.02] shadow-md"
+            >
+              <span>🧘‍♂️</span>
+              <span>Fai la pratica di respiro</span>
+            </button>
           </div>
         )}
 

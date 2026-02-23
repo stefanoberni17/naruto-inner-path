@@ -110,7 +110,12 @@ export default function SettimanaPage() {
           Le Tue Settimane 🍥
         </h1>
         <p className="text-gray-600">
-          {unlockedWeeks.filter(w => w <= 4).length} settimane sbloccate su 4 (versione Beta)
+          {(() => {
+            const count = unlockedWeeks.filter(w => w <= 4).length;
+            return count === 1
+              ? '1 settimana sbloccata su 4 (versione Beta)'
+              : `${count} settimane sbloccate su 4 (versione Beta)`;
+          })()}
         </p>
       </div>
 
