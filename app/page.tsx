@@ -42,6 +42,7 @@ export default function HomePage() {
   const [weekData, setWeekData] = useState<any>(null);
   const [practices, setPractices] = useState<any[]>([]);
   const [loadingPractices, setLoadingPractices] = useState(false);
+  const [expandedPractice, setExpandedPractice] = useState<number | null>(null);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -168,17 +169,37 @@ export default function HomePage() {
       </div>
 
       <div className="max-w-6xl mx-auto">
-        <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg shadow-lg p-6 mb-6 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-orange-100 text-sm mb-1">📍 Sei qui</p>
-              <h2 className="text-2xl font-bold">
-                {WEEK_NAMES[currentWeek] || `Week ${currentWeek}`}
-              </h2>
+        {(() => {
+          const nextEpisode = completedEpisodes + 1;
+          const hasNextEpisode = nextEpisode <= 12; // BETA_MAX_EPISODE
+          const isAllDone = completedEpisodes >= 12;
+          return (
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg shadow-lg p-6 mb-6 text-white">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-orange-100 text-sm mb-1">📍 Sei qui</p>
+                  <h2 className="text-2xl font-bold">
+                    {WEEK_NAMES[currentWeek] || `Week ${currentWeek}`}
+                  </h2>
+                </div>
+                <div className="text-5xl">🍥</div>
+              </div>
+              {isAllDone ? (
+                <div className="bg-white/20 rounded-lg px-4 py-2 text-sm font-medium text-white text-center">
+                  🏆 Hai completato tutti gli episodi della Beta!
+                </div>
+              ) : (
+                <button
+                  onClick={() => router.push(`/episodio/${nextEpisode}`)}
+                  className="w-full sm:w-auto bg-white text-orange-600 font-bold py-2.5 px-5 rounded-lg hover:bg-orange-50 transition-all text-sm flex items-center justify-center gap-2 shadow-sm"
+                >
+                  <span>▶</span>
+                  <span>{completedEpisodes === 0 ? 'Inizia: Episodio 1' : `Continua: Episodio ${nextEpisode}`}</span>
+                </button>
+              )}
             </div>
-            <div className="text-5xl">🍥</div>
-          </div>
-        </div>
+          );
+        })()}
 
         {mantra && (
           <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
@@ -193,7 +214,7 @@ export default function HomePage() {
             </div>
             <button
               onClick={openMeditation}
-              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-all transform hover:scale-[1.02] shadow-md"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-all transform hover:scale-[1.02] shadow-md"
             >
               <span>🧘‍♂️</span>
               <span>Fai la pratica di respiro</span>
@@ -210,13 +231,14 @@ export default function HomePage() {
               <span className="text-xs text-gray-400">tracker 14 giorni</span>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2">
               {practicheArray.slice(0, 3).map((praticaText: string, index: number) => {
                 const practice = practices.find(p => p.practice_number === index + 1);
                 const completedDays = practice?.completed_days || {};
                 const completedCount = DAY_KEYS.filter(day => completedDays[day]).length;
                 const percentage = Math.round((completedCount / 14) * 100);
                 const isComplete = completedCount === 14;
+                const isExpanded = expandedPractice === index;
 
                 return (
                   <div
@@ -225,16 +247,19 @@ export default function HomePage() {
                       isComplete ? 'border-green-200' : 'border-gray-100'
                     }`}
                   >
-                    {/* Header pratica */}
-                    <div className="flex items-start gap-3 p-4 pb-3">
-                      <span className={`w-7 h-7 rounded-full text-white text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                    {/* Header pratica — cliccabile per espandere */}
+                    <button
+                      className="w-full flex items-center gap-3 p-4 text-left"
+                      onClick={() => setExpandedPractice(isExpanded ? null : index)}
+                    >
+                      <span className={`w-7 h-7 rounded-full text-white text-xs font-bold flex items-center justify-center flex-shrink-0 ${
                         isComplete ? 'bg-green-500' : 'bg-gray-300'
                       }`}>
                         {isComplete ? '✓' : index + 1}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-800 leading-snug">{praticaText}</p>
-                        <div className="flex items-center gap-2 mt-2">
+                        <p className="text-sm font-semibold text-gray-800 leading-snug line-clamp-2">{praticaText.split('—')[0].trim()}</p>
+                        <div className="flex items-center gap-2 mt-1.5">
                           <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                             <div
                               className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full transition-all duration-500"
@@ -248,34 +273,39 @@ export default function HomePage() {
                           </span>
                         </div>
                       </div>
-                    </div>
+                      <span className="text-gray-300 text-sm flex-shrink-0 ml-1">
+                        {isExpanded ? '▲' : '▼'}
+                      </span>
+                    </button>
 
-                    {/* Day dots */}
-                    <div className="px-4 pb-4 space-y-1.5">
-                      {[DAY_KEYS.slice(0, 7), DAY_KEYS.slice(7, 14)].map((week, wi) => (
-                        <div key={wi} className="flex items-center gap-1">
-                          <span className="text-xs text-gray-300 w-8 flex-shrink-0">
-                            S{wi + 1}
-                          </span>
-                          <div className="flex gap-1 flex-1">
-                            {week.map(day => (
-                              <button
-                                key={day}
-                                onClick={() => togglePracticeDay(index + 1, day)}
-                                disabled={loadingPractices}
-                                className={`flex-1 h-7 rounded-lg text-xs font-bold transition-all active:scale-95 ${
-                                  completedDays[day]
-                                    ? 'bg-green-500 text-white shadow-sm'
-                                    : 'bg-gray-50 text-gray-400 border border-gray-200 hover:border-green-300 hover:bg-green-50'
-                                } disabled:opacity-50`}
-                              >
-                                {completedDays[day] ? '✓' : DAY_LABELS[day]}
-                              </button>
-                            ))}
+                    {/* Day tracker — visibile solo quando espanso */}
+                    {isExpanded && (
+                      <div className="px-4 pb-4 space-y-1.5 border-t border-gray-50 pt-3">
+                        {[DAY_KEYS.slice(0, 7), DAY_KEYS.slice(7, 14)].map((week, wi) => (
+                          <div key={wi} className="flex items-center gap-1">
+                            <span className="text-xs text-gray-300 w-8 flex-shrink-0">
+                              S{wi + 1}
+                            </span>
+                            <div className="flex gap-1 flex-1">
+                              {week.map(day => (
+                                <button
+                                  key={day}
+                                  onClick={() => togglePracticeDay(index + 1, day)}
+                                  disabled={loadingPractices}
+                                  className={`flex-1 h-7 rounded-lg text-xs font-bold transition-all active:scale-95 ${
+                                    completedDays[day]
+                                      ? 'bg-green-500 text-white shadow-sm'
+                                      : 'bg-gray-50 text-gray-400 border border-gray-200 hover:border-green-300 hover:bg-green-50'
+                                  } disabled:opacity-50`}
+                                >
+                                  {completedDays[day] ? '✓' : DAY_LABELS[day]}
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -327,7 +357,7 @@ export default function HomePage() {
 
           <button
             onClick={() => router.push('/settimane')}
-            className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-full transition-all transform hover:scale-105"
+            className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-full transition-all transform hover:scale-105 w-full sm:w-auto"
           >
             🚀 Esplora le Settimane
           </button>

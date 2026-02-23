@@ -21,8 +21,8 @@ export default function BottomTabBar() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex justify-around items-center h-16">
+      <div className="max-w-7xl mx-auto px-2">
+        <div className="flex justify-around items-center h-16 gap-1">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = pathname === tab.href;
@@ -31,14 +31,14 @@ export default function BottomTabBar() {
               <Link
                 key={tab.href}
                 href={tab.href}
-                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
+                className={`flex flex-col items-center justify-center flex-1 h-12 rounded-xl transition-all ${
                   isActive
-                    ? 'text-orange-600'
-                    : 'text-gray-400 hover:text-gray-600'
+                    ? 'text-orange-600 bg-orange-50'
+                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
                 }`}
               >
                 <Icon className={`w-6 h-6 ${isActive ? 'stroke-[2.5]' : ''}`} />
-                <span className="text-xs mt-1 font-medium">{tab.label}</span>
+                <span className={`text-xs mt-0.5 font-medium ${isActive ? 'font-semibold' : ''}`}>{tab.label}</span>
               </Link>
             );
           })}

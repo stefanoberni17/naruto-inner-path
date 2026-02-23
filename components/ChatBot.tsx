@@ -14,7 +14,7 @@ export interface ChatBotRef {
   sendSuggestion: (text: string) => void;
 }
 
-export default function ChatBot({ ref }: { ref?: React.Ref<ChatBotRef> }) {
+export default function ChatBot({ ref, suggestions }: { ref?: React.Ref<ChatBotRef>; suggestions?: string[] }) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -111,9 +111,9 @@ export default function ChatBot({ ref }: { ref?: React.Ref<ChatBotRef> }) {
   }));
 
   return (
-    <div className="flex flex-col h-[600px] bg-white rounded-lg shadow-lg border border-gray-200">
+    <div className="flex flex-col h-[calc(100svh-13rem)] min-h-[380px] max-h-[640px] bg-white rounded-lg shadow-lg border border-gray-200">
       {/* Header */}
-      <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-4 rounded-t-lg">
+      <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-4 rounded-t-lg flex-shrink-0">
         <div className="flex items-center gap-2">
           <Bot className="w-6 h-6" />
           <div>
@@ -124,7 +124,24 @@ export default function ChatBot({ ref }: { ref?: React.Ref<ChatBotRef> }) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+        {/* Suggestion pills — visible only before user sends first message */}
+        {suggestions && suggestions.length > 0 && messages.length <= 1 && (
+          <div className="pb-2">
+            <p className="text-xs text-gray-400 mb-2 font-medium">💡 Suggerimenti per iniziare:</p>
+            <div className="flex flex-wrap gap-2">
+              {suggestions.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => sendMessageText(s)}
+                  className="text-left text-xs bg-orange-50 text-orange-700 border border-orange-200 rounded-full px-3 py-1.5 hover:bg-orange-100 hover:border-orange-300 transition-colors active:scale-95"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         {messages.map((message, index) => (
           <div
             key={index}

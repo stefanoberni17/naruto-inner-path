@@ -124,29 +124,19 @@ export default function ProfiloPage() {
     <main className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100 py-8 px-4 pb-24">
       {/* Header */}
       <div className="max-w-3xl mx-auto mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-md relative">
-              <span className="text-white font-bold text-xl">
-                {nome ? nome.charAt(0).toUpperCase() : '🍥'}
-              </span>
-              <span className="absolute -bottom-0.5 -right-0.5 text-lg">🍥</span>
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800">
-                Il tuo Profilo
-              </h1>
-              <p className="text-sm text-gray-600">{email}</p>
-            </div>
+        <div className="flex items-center gap-3">
+          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-md relative">
+            <span className="text-white font-bold text-xl">
+              {nome ? nome.charAt(0).toUpperCase() : '🍥'}
+            </span>
+            <span className="absolute -bottom-0.5 -right-0.5 text-lg">🍥</span>
           </div>
-          
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-          >
-            <span>🚪</span>
-            <span>Esci</span>
-          </button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">
+              Il tuo Profilo
+            </h1>
+            <p className="text-sm text-gray-600">{email}</p>
+          </div>
         </div>
       </div>
 
@@ -304,7 +294,7 @@ export default function ProfiloPage() {
             </div>
           </div>
 
-          {/* Bottone */}
+          {/* Bottone salva */}
           <div className="mt-8">
             <button
               type="submit"
@@ -312,6 +302,18 @@ export default function ProfiloPage() {
               className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? 'Salvataggio...' : '💾 Salva Modifiche'}
+            </button>
+          </div>
+
+          {/* Logout */}
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 py-3 px-6 text-sm text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all border border-red-100 hover:border-red-200"
+            >
+              <span>🚪</span>
+              <span>Esci dall'account</span>
             </button>
           </div>
         </form>

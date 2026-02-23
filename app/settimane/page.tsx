@@ -219,48 +219,16 @@ export default function SettimanaPage() {
           );
         })}
 
-        {/* Settimane 7-8 — Prossimamente */}
-        {[
-          { numero: 7, label: 'Week 7', titolo: 'Il Risveglio del Guerriero', tema: 'Forza interiore e identità autentica', episodi: '20-26' },
-          { numero: 8, label: 'Week 8', titolo: 'La Via del Maestro', tema: 'Trasmettere e servire', episodi: '27-33' },
-        ].map((w) => (
-          <div
-            key={w.numero}
-            className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-dashed border-orange-200 opacity-70 relative overflow-hidden"
-          >
-            {/* Sfondo decorativo */}
-            <div className="absolute inset-0 bg-gradient-to-br from-orange-50/40 to-transparent pointer-events-none" />
-
-            <div className="relative">
-              <div className="flex items-start justify-between mb-3">
-                <span className="text-xs font-semibold px-3 py-1 rounded-full text-orange-600 bg-orange-50 border border-orange-200">
-                  {w.label}
-                </span>
-                <span className="text-xs font-bold text-orange-500 bg-orange-50 border border-orange-200 px-2 py-1 rounded-full">
-                  🔜 Prossimamente
-                </span>
-              </div>
-
-              <h3 className="text-xl font-bold mb-2 text-gray-500">
-                {w.titolo}
-              </h3>
-
-              <p className="text-sm mb-3 text-gray-400">
-                {w.tema}
-              </p>
-
-              <div className="text-xs border-t border-dashed border-gray-200 pt-3 text-gray-400 mb-3">
-                📺 Episodi: {w.episodi}
-              </div>
-
-              <div className="bg-orange-50 border border-orange-100 rounded-lg p-3 text-center">
-                <p className="text-xs text-orange-700 font-medium">
-                  Disponibile nella versione completa del percorso 🍥
-                </p>
-              </div>
+        {/* Teaser versione completa */}
+        <div className="md:col-span-2 lg:col-span-3 mt-2">
+          <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-dashed border-orange-200 rounded-lg p-4 flex items-center gap-3 opacity-80">
+            <span className="text-2xl">🔜</span>
+            <div>
+              <p className="text-sm font-semibold text-orange-800">Altre settimane in arrivo</p>
+              <p className="text-xs text-orange-600 mt-0.5">Week 7–8 e oltre saranno disponibili nella versione completa del percorso.</p>
             </div>
           </div>
-        ))}
+        </div>
 
       </div>
     </main>
