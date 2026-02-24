@@ -4,6 +4,7 @@ import {
   buildUserContext,
   callClaude,
   checkSafetyKeywords,
+  generateMaestroRecap,
   SYSTEM_PROMPT,
   SYSTEM_PROMPT_NOT_REGISTERED
 } from '@/lib/maestro-ai';
@@ -30,34 +31,79 @@ export async function POST(request: NextRequest) {
     const telegramUserId = message.from.id.toString();
     const userText = message.text;
 
-    /* disabilitato per ora
-    if (checkSafetyKeywords(userText)) {
-      await sendSafetyAlert(telegramUserId, '', userText);
-    }
-    */
-
     const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('user_id')
       .eq('telegram_id', telegramUserId)
       .single();
 
-    let systemPrompt = '';
-
-    if (profile?.user_id) {
-      const userContext = await buildUserContext(profile.user_id);
-      systemPrompt = SYSTEM_PROMPT + '\n\n' + userContext;
-    } else {
-      systemPrompt = SYSTEM_PROMPT_NOT_REGISTERED;
+    if (!profile?.user_id) {
+      const { text } = await callClaude(
+        SYSTEM_PROMPT_NOT_REGISTERED,
+        [{ role: 'user', content: userText }],
+        300
+      );
+      await sendTelegramMessage(chatId, text);
+      return NextResponse.json({ ok: true });
     }
 
-    const { text } = await callClaude(
-      systemPrompt,
-      [{ role: 'user', content: userText }],
-      1500
-    );
+    const userId = profile.user_id;
+
+    // Carica ultimi 20 messaggi (sliding window)
+    const { data: history } = await supabaseAdmin
+      .from('telegram_conversations')
+      .select('role, content')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    const conversationHistory = (history || []).reverse();
+    const isFirstMessage = conversationHistory.length === 0;
+
+    const userContext = await buildUserContext(userId);
+    const firstMessageNote = isFirstMessage
+      ? '\n\n# PRIMO CONTATTO TELEGRAM\nÈ la prima volta che questo utente ti scrive su Telegram. Accoglilo calorosamente, presentati brevemente come il Maestro AI del suo percorso. Fai UNA sola domanda semplice e aperta per capire come sta in questo momento — niente di profondo o terapeutico. Massimo 3-4 frasi in totale.'
+      : '';
+    const systemPrompt = SYSTEM_PROMPT + firstMessageNote + '\n\n' + userContext;
+
+    const messages = [
+      ...conversationHistory.map((m: any) => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
+      })),
+      { role: 'user' as const, content: userText },
+    ];
+
+    const { text } = await callClaude(systemPrompt, messages, 1500);
 
     await sendTelegramMessage(chatId, text);
+
+    // Salva user message + risposta del Maestro
+    const { error: insertError } = await supabaseAdmin.from('telegram_conversations').insert([
+      { user_id: userId, role: 'user', content: userText },
+      { user_id: userId, role: 'assistant', content: text },
+    ]);
+    if (insertError) console.error('❌ Errore salvataggio conversazione:', insertError);
+
+    // Ogni 20 messaggi totali → aggiorna il recap (fire-and-forget)
+    const { count } = await supabaseAdmin
+      .from('telegram_conversations')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
+    if (count && count % 20 === 0) {
+      const { data: recapMessages } = await supabaseAdmin
+        .from('telegram_conversations')
+        .select('role, content')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(40);
+
+      const recapHistory = (recapMessages || []).reverse();
+      generateMaestroRecap(userId, recapHistory).catch(err =>
+        console.error('Recap generation error:', err)
+      );
+    }
 
     return NextResponse.json({ ok: true });
   } catch (error) {

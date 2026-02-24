@@ -191,14 +191,23 @@ Accompagnare la persona a diventare autonoma nel vedersi, nel sentire, nel scegl
 
 **Il vero Maestro rende sé stesso sempre meno necessario.**
 
-**Evita di creare attaccamento o dipendenza emotiva. Non sostituirti alle relazioni reali. Il tuo ruolo è aiutare la persona a tornare alla vita, non a restare nella conversazione.**`;
+**Evita di creare attaccamento o dipendenza emotiva. Non sostituirti alle relazioni reali. Il tuo ruolo è aiutare la persona a tornare alla vita, non a restare nella conversazione.**
+
+# FORMATO TELEGRAM
+
+Stai rispondendo su Telegram. Tieni presente:
+- Risposte brevi: massimo 4-5 righe per messaggio
+- Niente markdown (niente **grassetto**, niente _corsivo_, niente liste con trattini)
+- Tono colloquiale, come un messaggio scritto a mano
+- Non riassumere mai quello che ha detto l'utente prima di rispondere
+- Una sola domanda per messaggio, mai due`;
 
 export const SYSTEM_PROMPT_NOT_REGISTERED = `Sei il Maestro AI di Naruto Inner Path. Questo utente non è ancora registrato sulla piattaforma. Rispondi in modo caldo e breve (max 2-3 frasi), invitalo gentilmente a registrarsi su naruto-inner-path.vercel.app e poi a collegare il suo account Telegram dal profilo per iniziare il percorso.`;
 
 export async function buildUserContext(userId: string): Promise<string> {
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('name, age, goals, passions, dream, current_situation, current_week')
+    .select('name, age, goals, passions, dream, current_situation, current_week, maestro_notes')
     .eq('user_id', userId)
     .single();
 
@@ -242,10 +251,60 @@ Domanda: "${r.reflection_question}"
 Risposta: "${r.reflection_text}"
 `).join('\n')
   : 'Nessuna riflessione ancora scritta'}
-
+${profile?.maestro_notes ? `
+## Appunti del Maestro (memoria distillata)
+*Pattern ricorrenti e temi emersi nelle conversazioni precedenti*
+${profile.maestro_notes}
+` : ''}
 ---
 
 **IMPORTANTE:** Usa queste informazioni per dare risposte personalizzate e profonde. Le riflessioni dell'utente sono la chiave per capire il suo viaggio interiore.`;
+}
+
+const RECAP_SYSTEM_PROMPT = `Sei un assistente che distilla conversazioni tra un utente e il Maestro AI di Naruto Inner Path.
+
+Il tuo compito è aggiornare le note di memoria sul profilo dell'utente. Estrai solo pattern comportamentali generali e temi ricorrenti — NON copiare mai confessioni, contenuti sensibili o dettagli personali verbatim.
+
+Produci un testo conciso (max 300 parole) con questo formato:
+**Temi ricorrenti:** [temi che emergono spesso]
+**Pattern emersi:** [osservazioni oggettive sul modo di relazionarsi]
+**Thread aperti:** [temi non risolti che potrebbero riemergere]
+**Metafore che risuonano:** [simboli o immagini che hanno avuto impatto]
+
+Sii neutro e descrittivo. Nessuna diagnosi psicologica. Nessun giudizio di valore.`;
+
+export async function generateMaestroRecap(
+  userId: string,
+  recentMessages: { role: string; content: string }[]
+): Promise<void> {
+  try {
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('maestro_notes')
+      .eq('user_id', userId)
+      .single();
+
+    const systemPrompt = profile?.maestro_notes
+      ? `${RECAP_SYSTEM_PROMPT}\n\nNote precedenti da aggiornare e integrare:\n${profile.maestro_notes}`
+      : RECAP_SYSTEM_PROMPT;
+
+    const conversationText = recentMessages
+      .map(m => `${m.role === 'user' ? 'Utente' : 'Maestro'}: ${m.content}`)
+      .join('\n\n');
+
+    const { text } = await callClaude(
+      systemPrompt,
+      [{ role: 'user', content: `Conversazione recente:\n\n${conversationText}` }],
+      600
+    );
+
+    await supabaseAdmin
+      .from('profiles')
+      .update({ maestro_notes: text })
+      .eq('user_id', userId);
+  } catch (error) {
+    console.error('Errore generateMaestroRecap:', error);
+  }
 }
 
 export async function callClaude(
