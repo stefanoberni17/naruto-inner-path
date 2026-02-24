@@ -285,6 +285,28 @@ export default function RegisterPage() {
                 />
               </div>
 
+              {/* Consenso privacy */}
+              <div className="flex items-start gap-3 pt-1">
+                <input
+                  type="checkbox"
+                  id="privacy-consent"
+                  required
+                  className="mt-0.5 w-4 h-4 accent-orange-500 shrink-0 cursor-pointer"
+                />
+                <label htmlFor="privacy-consent" className="text-xs text-gray-500 leading-relaxed cursor-pointer">
+                  Ho letto e accetto la{' '}
+                  <a
+                    href="/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-orange-500 hover:text-orange-600 underline"
+                  >
+                    Privacy Policy
+                  </a>
+                  . Acconsento al salvataggio dei miei dati per personalizzare il percorso.
+                </label>
+              </div>
+
               <button
                 type="submit"
                 className="w-full bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-sm"

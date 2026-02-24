@@ -76,6 +76,14 @@ export async function POST(request: NextRequest) {
 
     const { text } = await callClaude(systemPrompt, messages, 1500);
 
+    // Al primo messaggio: invia avviso privacy prima della risposta del Maestro
+    if (isFirstMessage) {
+      await sendTelegramMessage(
+        chatId,
+        '🔒 Privacy: le nostre conversazioni vengono salvate per personalizzare il tuo percorso e cancellate automaticamente dopo 90 giorni.\n\nPer info o cancellazione: foryou.innerpath@gmail.com\nPolicy completa: naruto-inner-path.vercel.app/privacy'
+      );
+    }
+
     await sendTelegramMessage(chatId, text);
 
     // Salva user message + risposta del Maestro

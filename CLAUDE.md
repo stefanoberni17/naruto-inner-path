@@ -41,6 +41,7 @@ naruto-inner-path/
 │   ├── settimana/[id]/page.tsx    # Dettaglio settimana (id = Notion page ID)
 │   ├── episodio/[id]/page.tsx     # Episodio (id = numero episodio 1-19)
 │   ├── profilo/page.tsx
+│   ├── privacy/page.tsx           # Privacy Policy (pubblica, senza BottomTabBar)
 │   └── api/
 │       ├── settimane/route.ts     # GET → lista 6 settimane da Notion DB
 │       ├── settimana/route.ts     # GET ?id= → dettaglio pagina Notion + blocchi
@@ -48,7 +49,9 @@ naruto-inner-path/
 │       ├── practices/route.ts     # GET/POST tracker pratiche (14 giorni × 3 pratiche)
 │       ├── reflection/route.ts    # GET/POST riflessioni post-episodio
 │       ├── chat/route.ts          # POST → Claude Sonnet con context utente
-│       └── telegram/route.ts      # POST → webhook bot Telegram
+│       ├── telegram/route.ts      # POST → webhook bot Telegram
+│       └── cron/
+│           └── cleanup-telegram/route.ts  # GET → elimina telegram_conversations > 90gg
 ├── components/
 │   ├── BottomTabBar.tsx           # Nav fissa: Home / Percorso / Maestro / Profilo
 │   ├── ChatBot.tsx                # UI chat (usata in /chat)
@@ -66,6 +69,7 @@ naruto-inner-path/
 │   └── audio/
 │       ├── nature-meditation.mp3
 │       └── naruto-meditation.mp3
+├── vercel.json                    # Cron job Vercel (cleanup-telegram ogni notte alle 03:00)
 └── docs/                          # ← Documentazione progetto (da popolare)
 ```
 
@@ -89,6 +93,7 @@ ANTHROPIC_API_KEY=
 
 # Telegram (opzionale)
 TELEGRAM_BOT_TOKEN=
+CRON_SECRET=                    # Segreto per autorizzare le chiamate ai cron job Vercel
 ```
 
 ---
@@ -141,6 +146,16 @@ created_at       TIMESTAMPTZ
 updated_at       TIMESTAMPTZ
 PRIMARY KEY (user_id, week_number, practice_number)
 ```
+
+### `telegram_conversations`
+```sql
+user_id     UUID
+role        TEXT            -- 'user' | 'assistant'
+content     TEXT
+created_at  TIMESTAMPTZ
+```
+Sliding window: vengono caricati gli ultimi 20 messaggi per ogni richiesta.
+Retention automatica: il cron `/api/cron/cleanup-telegram` elimina righe più vecchie di 90 giorni.
 
 ---
 
@@ -204,7 +219,7 @@ const WEEK_IDS: Record<number, string> = {
 
 ### Autenticazione
 ```
-Register (email + profilo) → Email conferma Supabase
+Register (email + profilo) → consenso Privacy Policy (checkbox obbligatorio) → Email conferma Supabase
   → Login → Check profilo + onboarding
     → Se onboarding non completato → /onboarding
     → Se ok → / (home)
@@ -261,10 +276,17 @@ User message → /api/chat
 ```
 Messaggio Telegram → POST /api/telegram (webhook)
   → Cerca telegram_id in profiles
-  → Se utente trovato: buildUserContext + Claude
-  → Se non trovato: SYSTEM_PROMPT_NOT_REGISTERED
-  → Risponde direttamente su Telegram API
+  → Se utente non trovato: risponde con SYSTEM_PROMPT_NOT_REGISTERED
+  → Se utente trovato:
+    → Carica ultimi 20 messaggi da telegram_conversations (sliding window)
+    → buildUserContext + SYSTEM_PROMPT + (primo messaggio? → nota accoglienza)
+    → Claude Sonnet
+    → Se primo messaggio: invia avviso privacy PRIMA della risposta del Maestro
+    → Risponde su Telegram API
+    → Salva user message + risposta in telegram_conversations
+    → Ogni 20 messaggi totali: genera recap (fire-and-forget) via generateMaestroRecap
 ```
+**Privacy:** al primo messaggio l'utente riceve automaticamente un avviso con link alla policy e contatto email.
 
 ---
 
@@ -299,7 +321,7 @@ if (!session) { router.push('/login'); return; }
 ```
 
 ### Routing BottomTabBar
-Il `BottomTabBar` si nasconde automaticamente su `/login`, `/register`, `/onboarding`. Aggiungere nuove rotte protette nella `skipPaths` del componente.
+Il `BottomTabBar` si nasconde automaticamente su `/login`, `/register`, `/onboarding`, `/privacy`. Aggiungere nuove rotte pubbliche o non-app nella lista `if` del componente.
 
 ---
 
@@ -358,7 +380,7 @@ const allDone = weekEps.every(ep => completedEpisodes.includes(ep));
 - [ ] Il mapping `WEEK_IDS` è duplicato in più file (`GlobalMeditationWrapper`, `app/page.tsx`, `app/settimane/page.tsx`) — considerare una costante centralizzata in `/lib/constants.ts`
 - [ ] Week 5-6 bloccate in Beta — da sbloccare rimuovendo la restrizione in `weekUnlockLogic.ts`
 - [ ] Nessun test automatico — da aggiungere
-- [ ] Il bot Telegram richiede configurazione webhook separata
+- [ ] Aggiungere `CRON_SECRET` come variabile d'ambiente in Vercel (richiesto da `/api/cron/cleanup-telegram`)
 - [ ] **Future (non MVP):** Sezione "Le mie riflessioni" in dashboard + pagina dedicata per rivedere e commentare le riflessioni salvate in `episode_reflections`
 
 ---

@@ -8,7 +8,7 @@ export default function BottomTabBar() {
   const pathname = usePathname();
 
   // Non mostrare tab bar su login/register/onboarding
-  if (pathname === '/login' || pathname === '/register' || pathname === '/onboarding') {
+  if (pathname === '/login' || pathname === '/register' || pathname === '/onboarding' || pathname === '/privacy') {
     return null;
   }
 

@@ -327,6 +327,18 @@ export default function ProfiloPage() {
               <span>Esci dall'account</span>
             </button>
           </div>
+
+          {/* Link privacy */}
+          <div className="mt-4 text-center">
+            <a
+              href="/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-gray-400 hover:text-gray-500 underline"
+            >
+              🔒 Privacy Policy
+            </a>
+          </div>
         </form>
       </div>
     </main>
