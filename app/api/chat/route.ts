@@ -3,7 +3,8 @@ import {
   buildUserContext,
   callClaude,
   checkSafetyKeywords,
-  SYSTEM_PROMPT
+  SYSTEM_PROMPT,
+  WEB_FORMAT
 } from '@/lib/maestro-ai';
 
 export async function POST(request: NextRequest) {
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
     */
 
     const userContext = await buildUserContext(userId);
-    const systemPrompt = SYSTEM_PROMPT + '\n\n' + userContext;
+    const systemPrompt = SYSTEM_PROMPT + WEB_FORMAT + '\n\n' + userContext;
 
     const { text, usage } = await callClaude(systemPrompt, messages, 1500);
 

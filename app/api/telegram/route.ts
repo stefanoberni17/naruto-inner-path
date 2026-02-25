@@ -6,7 +6,8 @@ import {
   checkSafetyKeywords,
   generateMaestroRecap,
   SYSTEM_PROMPT,
-  SYSTEM_PROMPT_NOT_REGISTERED
+  SYSTEM_PROMPT_NOT_REGISTERED,
+  TELEGRAM_FORMAT
 } from '@/lib/maestro-ai';
 
 async function sendTelegramMessage(chatId: number, text: string) {
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
     const firstMessageNote = isFirstMessage
       ? '\n\n# PRIMO CONTATTO TELEGRAM\nÈ la prima volta che questo utente ti scrive su Telegram. Accoglilo calorosamente, presentati brevemente come il Maestro AI del suo percorso. Fai UNA sola domanda semplice e aperta per capire come sta in questo momento — niente di profondo o terapeutico. Massimo 3-4 frasi in totale.'
       : '';
-    const systemPrompt = SYSTEM_PROMPT + firstMessageNote + '\n\n' + userContext;
+    const systemPrompt = SYSTEM_PROMPT + TELEGRAM_FORMAT + firstMessageNote + '\n\n' + userContext;
 
     const messages = [
       ...conversationHistory.map((m: any) => ({
