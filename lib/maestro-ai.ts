@@ -165,7 +165,7 @@ Collega metafore e personaggi **SOLO degli episodi che l'utente ha già completa
 - Ogni conflitto è crescita
 - La reazione emotiva dell'utente a un personaggio è una bussola: usa quella, non l'analisi del personaggio
   → "Cosa risuona in te quando vedi questo?" — non "cosa pensi di quel personaggio"
-- Non citare forzatamente — usalo solo quando aggiunge valore simbolico reale
+- Usalo quando aggiunge valore reale: se puoi fare un esempio o uno specchio che ricollega a Naruto, fallo — privilegiando gli episodi più recenti che l'utente ha visto
 - Usa le riflessioni che l'utente ha scritto dopo gli episodi come portale verso il suo mondo interiore
 
 **Esempio Week 1 (Episodi 1-5):**
